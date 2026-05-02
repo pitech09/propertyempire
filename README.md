@@ -120,8 +120,8 @@ API (JSON)
 Fully authenticated endpoints
 
 🛠️ How to Run Locally
-git clone https://github.com/benjamaina/house-management.git
-cd house-management
+git clone https://github.com/pitech09/PropertyEmpire.git
+cd PropertyEmpire
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
