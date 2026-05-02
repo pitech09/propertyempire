@@ -124,5 +124,5 @@ xarray==2026.4.0
 xlrd==2.0.2
 xlsxwriter==3.2.9
 yarl==1.23.0
-gunicorn==20.1.0
+gunicorn==22.0.0
 setuptools>=68.0.0
