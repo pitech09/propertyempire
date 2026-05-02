@@ -13,11 +13,11 @@
     <h1 class="page-title">Rent <span>Charges</span></h1>
     <div style="display: flex; gap: 0.75rem; align-items: center;">
         <button type="button" class="btn-help" onclick="document.getElementById('helpModal').style.display='flex'">
-            ℹ️ How It Works
+             How It Works
         </button>
-        <a href="{% url 'send_rent_reminders' %}" class="btn btn-secondary" style="border-color: var(--blue); color: var(--blue);">📱 Send Reminders</a>
-        <a href="{% url 'rent_charge_bulk_create' %}" class="btn btn-secondary" style="border-color: var(--primary); color: var(--primary);">⚡ Bulk Create</a>
-        <a href="{% url 'rent_charge_add' %}" class="btn btn-primary">+ Create Charge</a>
+        <a href="{% url 'send_rent_reminders' %}" class="btn btn-secondary" style="border-color: var(--blue); color: var(--blue);"> Send Reminders</a>
+        <a href="{% url 'rent_charge_bulk_create' %}" class="btn btn-secondary" style="border-color: var(--primary); color: var(--primary);"> Bulk Create</a>
+        <a href="{% url 'rent_charge_add' %}" class="btn btn-primary"> Create Charge</a>
     </div>
 </div>
 
@@ -25,7 +25,7 @@
 <div id="helpModal" class="help-modal" onclick="if(event.target===this)this.style.display='none'">
     <div class="help-modal-content">
         <div class="help-modal-header">
-            <h3>📋 About Rent Charges</h3>
+            <h3> About Rent Charges</h3>
             <button onclick="document.getElementById('helpModal').style.display='none'" class="help-modal-close">&times;</button>
         </div>
         <div class="help-modal-body">
@@ -142,8 +142,8 @@
         <h3>No rent charges created</h3>
         <p>Create rent charges to track what tenants owe</p>
         <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem;">
-            <a href="{% url 'rent_charge_add' %}" class="btn btn-primary">+ Create Charge</a>
-            <a href="{% url 'rent_charge_bulk_create' %}" class="btn btn-secondary">⚡ Bulk Create</a>
+            <a href="{% url 'rent_charge_add' %}" class="btn btn-primary"> Create Charge</a>
+            <a href="{% url 'rent_charge_bulk_create' %}" class="btn btn-secondary"> Bulk Create</a>
         </div>
     </div>
     {% endif %}
