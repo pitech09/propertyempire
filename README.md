@@ -135,3 +135,4 @@ Actively developed, backend-focused
 Designed for small to medium property management
 
 Emphasis on readable architecture and technical clarity
+# PropertyEmpire
