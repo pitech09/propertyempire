@@ -228,7 +228,6 @@ WSGI_APPLICATION = "house.wsgi.application"
 
 
 # # # db for sqlite3
-# set up for mysql for pythone everywhere platform
 import os
 
 DATABASES = {
@@ -245,17 +244,7 @@ DATABASES = {
     }
 }
 
-# set up for mysql for pythone everywhere platform
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': os.getenv('NAME'),
-#         'USER': os.getenv('USER'),
-#         'PASSWORD': os.getenv('PASSWORD'),
-#         'HOST': os.getenv('HOST'),
-#         'PORT': os.getenv('PORT'),
-#     }
-# }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
