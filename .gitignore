@@ -15,6 +15,7 @@ nginx/
 
 # Virtual Environments
 venv/
+myenv/
 env/
 web-venv/
 .env
