@@ -1037,19 +1037,19 @@
         function setTheme(theme) {
             if (theme === 'light') {
                 document.documentElement.classList.add('light-theme');
-                document.getElementById('themeIcon').textContent = '☀️';
-                document.getElementById('themeLabel').textContent = 'Light';
-            } else {
-                document.documentElement.classList.remove('light-theme');
                 document.getElementById('themeIcon').textContent = '🌙';
                 document.getElementById('themeLabel').textContent = 'Dark';
+            } else {
+                document.documentElement.classList.remove('light-theme');
+                document.getElementById('themeIcon').textContent = '☀️';
+                document.getElementById('themeLabel').textContent = 'Light';
             }
             localStorage.setItem('theme', theme);
         }
 
         function toggleTheme() {
             const currentTheme = getTheme();
-            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            setTheme(currentTheme === 'light' ? 'dark' : 'light');
         }
 
         // Apply saved theme on load

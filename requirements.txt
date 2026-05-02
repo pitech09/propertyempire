@@ -47,7 +47,7 @@ markdown-it-py==4.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
 multidict==6.7.1
-mysqlclient==2.2.7
+
 orjson==3.11.2
 packaging==25.0
 phonenumbers==9.0.2

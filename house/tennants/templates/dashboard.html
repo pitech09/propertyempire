@@ -156,7 +156,7 @@
                 {% for payment in recent_payments %}
                 <tr>
                     <td style="color: var(--text-primary); font-weight: 500;">{{ payment.tenant.full_name }}</td>
-                    <td style="color: var(--accent-green);">KES {{ payment.amount }}</td>
+                    <td style="color: var(--accent-green);">M {{ payment.amount }}</td>
                     <td>{{ payment.rent_charge.get_month_display }} {{ payment.rent_charge.year }}</td>
                     <td>{{ payment.get_payment_method_display }}</td>
                     <td>{{ payment.paid_at|date:"M d, Y" }}</td>
@@ -198,9 +198,9 @@
                 <tr>
                     <td style="color: var(--text-primary); font-weight: 500;">{{ charge.tenant.full_name }}</td>
                     <td>{{ charge.get_month_display }} {{ charge.year }}</td>
-                    <td>KES {{ charge.amount_due }}</td>
-                    <td style="color: var(--accent-green);">KES {{ charge.total_paid }}</td>
-                    <td style="color: var(--danger); font-weight: 600;">KES {{ charge.balance }}</td>
+                    <td>M {{ charge.amount_due }}</td>
+                    <td style="color: var(--accent-green);">M {{ charge.total_paid }}</td>
+                    <td style="color: var(--danger); font-weight: 600;">M {{ charge.balance }}</td>
                     <td>
                         <div class="action-buttons">
                             <a href="{% url 'rent_charge_detail' charge.pk %}" class="btn-icon" title="View">👁</a>

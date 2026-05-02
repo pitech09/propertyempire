@@ -103,13 +103,13 @@ class TwilioNotificationService:
         
         message = (
             f"Hi {tenant.full_name},\n\n"
-            f"Rent Reminder: Your rent of KES {rent_charge.amount_due:,.2f} "
+            f"Rent Reminder: Your rent of M {rent_charge.amount_due:,.2f} "
             f"for {tenant.building_name} - House {tenant.house.house_number} "
             f"is due {urgency} ({tenant.rent_due_date.strftime('%d %b %Y')}).\n\n"
         )
         
         if rent_charge.balance > 0:
-            message += f"Current balance: KES {rent_charge.balance:,.2f}\n\n"
+            message += f"Current balance: M {rent_charge.balance:,.2f}\n\n"
         
         message += "Thank you for your prompt payment!"
         
@@ -122,14 +122,14 @@ class TwilioNotificationService:
         
         message = (
             f"Hi {tenant.full_name},\n\n"
-            f"Payment Received: KES {payment.amount:,.2f} "
+            f"Payment Received: M {payment.amount:,.2f} "
             f"for {rent_charge.get_month_display()} {rent_charge.year} rent.\n\n"
             f"Payment Method: {payment.get_payment_method_display()}\n"
             f"Date: {payment.paid_at.strftime('%d %b %Y, %I:%M %p')}\n\n"
         )
         
         if rent_charge.balance > 0:
-            message += f"Remaining balance: KES {rent_charge.balance:,.2f}\n\n"
+            message += f"Remaining balance: M {rent_charge.balance:,.2f}\n\n"
         else:
             message += "Your rent is now fully paid. Thank you!\n\n"
         
@@ -141,7 +141,7 @@ class TwilioNotificationService:
             f"Welcome {tenant.full_name}!\n\n"
             f"You've been assigned to {tenant.building_name} - "
             f"House {tenant.house.house_number}.\n\n"
-            f"Monthly Rent: KES {tenant.rent:,.2f}\n"
+            f"Monthly Rent: M {tenant.rent:,.2f}\n"
             f"Rent Due Date: {tenant.rent_due_date.strftime('%d of each month')}\n\n"
             f"We're happy to have you!"
         )
@@ -157,7 +157,7 @@ class TwilioNotificationService:
             f"OVERDUE NOTICE: Your rent payment for "
             f"{rent_charge.get_month_display()} {rent_charge.year} "
             f"is {days_overdue} days overdue.\n\n"
-            f"Amount Due: KES {rent_charge.balance:,.2f}\n"
+            f"Amount Due: M {rent_charge.balance:,.2f}\n"
             f"Due Date: {tenant.rent_due_date.strftime('%d %b %Y')}\n\n"
             f"Please make payment as soon as possible.\n"
             f"Contact us if you need assistance."

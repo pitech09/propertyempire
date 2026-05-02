@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY") 
 
 # DEBUG = "True" if os.getenv("DEBUG", "False") == "True" else False
 DEBUG = False
@@ -61,8 +61,6 @@ SESSION_COOKIE_AGE = 60 * 30  # 30 minutes
 SESSION_SAVE_EVERY_REQUEST = True
 
 
-
-print("ALLOWED_HOSTS:", ALLOWED_HOSTS)
 INSTALLED_APPS = [
     "unfold",
     "django.contrib.admin",

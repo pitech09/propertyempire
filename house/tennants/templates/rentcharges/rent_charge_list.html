@@ -103,10 +103,10 @@
                         {% endif %}
                     </td>
                     <td>{{ charge.get_month_display }} {{ charge.year }}</td>
-                    <td>KES {{ charge.amount_due }}</td>
-                    <td style="color: var(--success);">KES {{ charge.total_paid }}</td>
+                    <td>M {{ charge.amount_due }}</td>
+                    <td style="color: var(--success);">M {{ charge.total_paid }}</td>
                     <td style="color: {% if charge.balance > 0 %}var(--danger){% else %}var(--success){% endif %}; font-weight: 600;">
-                        KES {{ charge.balance }}
+                        M {{ charge.balance }}
                     </td>
                     <td>
                         {% if charge.is_paid %}

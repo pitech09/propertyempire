@@ -23,7 +23,7 @@
     <div class="card-header">
         <h2 class="card-title">Payment #{{ payment.pk }}</h2>
         <span class="badge badge-success" style="font-size: 1rem; padding: 0.5rem 1rem;">
-            KES {{ payment.amount }}
+            M {{ payment.amount }}
         </span>
     </div>
 
@@ -62,7 +62,7 @@
         <div style="display: grid; grid-template-columns: 140px 1fr; gap: 0.5rem; align-items: start;">
             <span style="color: var(--text-muted); font-size: 0.9rem;">Amount Paid:</span>
             <span style="color: var(--accent-green); font-weight: 600; font-size: 1.1rem;">
-                KES {{ payment.amount }}
+                M {{ payment.amount }}
             </span>
         </div>
 
@@ -95,16 +95,16 @@
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
                 <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.25rem;">Amount Due</div>
-                <div style="color: var(--text-primary); font-weight: 600;">KES {{ payment.rent_charge.amount_due }}</div>
+                <div style="color: var(--text-primary); font-weight: 600;">M {{ payment.rent_charge.amount_due }}</div>
             </div>
             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
                 <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.25rem;">Total Paid</div>
-                <div style="color: var(--accent-green); font-weight: 600;">KES {{ payment.rent_charge.total_paid }}</div>
+                <div style="color: var(--accent-green); font-weight: 600;">M {{ payment.rent_charge.total_paid }}</div>
             </div>
             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
                 <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.25rem;">Balance</div>
                 <div style="color: {% if payment.rent_charge.balance > 0 %}var(--danger){% else %}var(--success){% endif %}; font-weight: 600;">
-                    KES {{ payment.rent_charge.balance }}
+                    M {{ payment.rent_charge.balance }}
                 </div>
             </div>
         </div>

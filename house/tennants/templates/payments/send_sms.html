@@ -104,8 +104,8 @@
                         {% endif %}
                     </td>
                     <td>{{ item.rent_charge.get_month_display }} {{ item.rent_charge.year }}</td>
-                    <td>KES {{ item.rent_charge.amount_due }}</td>
-                    <td style="color: var(--danger); font-weight: 600;">KES {{ item.rent_charge.balance }}</td>
+                    <td>M {{ item.rent_charge.amount_due }}</td>
+                    <td style="color: var(--danger); font-weight: 600;">M {{ item.rent_charge.balance }}</td>
                     <td>
                         {% if item.days_until_due == 0 %}
                         <span class="badge badge-danger">TODAY</span>

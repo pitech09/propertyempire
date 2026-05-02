@@ -41,7 +41,7 @@
                 <option value="">Select a tenant</option>
                 {% for tenant in form.fields.tenant.queryset %}
                 <option value="{{ tenant.pk }}" {% if form.tenant.value == tenant.pk|stringformat:"i" %}selected{% endif %}>
-                    {{ tenant.full_name }}{% if tenant.house %} - {{ tenant.house.house_number }} (KES {{ tenant.house.house_rent_amount }}/month){% endif %}
+                    {{ tenant.full_name }}{% if tenant.house %} - {{ tenant.house.house_number }} (M {{ tenant.house.house_rent_amount }}/month){% endif %}
                 </option>
                 {% endfor %}
             </select>
@@ -85,7 +85,7 @@
         </div>
 
         <div class="form-group">
-            <label for="id_amount_due" class="form-label">Amount Due (KES)</label>
+            <label for="id_amount_due" class="form-label">Amount Due (M)</label>
             <input type="number" 
                    name="amount_due" 
                    id="id_amount_due" 

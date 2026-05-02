@@ -101,7 +101,7 @@
                     </td>
                     <td>{{ tenant.building_name|default:"-" }}</td>
                     <td style="color: {% if tenant.balance > 0 %}var(--danger){% else %}var(--success){% endif %};">
-                        KES {{ tenant.balance }}
+                        M {{ tenant.balance }}
                     </td>
                     <td>
                         {% if tenant.is_active %}

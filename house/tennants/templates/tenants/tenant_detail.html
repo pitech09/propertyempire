@@ -29,11 +29,11 @@
     </div>
     <div class="stat-card">
         <div class="stat-value" style="color: var(--accent-green);">{{ tenant.rent }}</div>
-        <div class="stat-label">Monthly Rent (KES)</div>
+        <div class="stat-label">Monthly Rent (M)</div>
     </div>
     <div class="stat-card">
         <div class="stat-value" style="color: {% if tenant.balance > 0 %}var(--danger){% else %}var(--success){% endif %};">{{ tenant.balance }}</div>
-        <div class="stat-label">Balance (KES)</div>
+        <div class="stat-label">Balance (M)</div>
     </div>
     <div class="stat-card">
         <div class="stat-value">{{ payments.count }}</div>
@@ -97,7 +97,7 @@
         </div>
         <div class="detail-item">
             <div class="detail-label">Security Deposit</div>
-            <div class="detail-value">KES {{ tenant.security_deposit }}</div>
+            <div class="detail-value">M {{ tenant.security_deposit }}</div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Member Since</div>
@@ -110,7 +110,7 @@
 {% if overdue_payments %}
 <div class="alert alert-warning">
     <strong>⚠️ Overdue Payments:</strong> This tenant has {{ overdue_payments.count }} overdue payment(s) totaling 
-    KES {% for p in overdue_payments %}{{ p.balance }}{% if not forloop.last %} + {% endif %}{% endfor %}
+    M {% for p in overdue_payments %}{{ p.balance }}{% if not forloop.last %} + {% endif %}{% endfor %}
 </div>
 {% endif %}
 
@@ -141,10 +141,10 @@
                     <td style="color: var(--text-primary); font-weight: 500;">
                         {{ payment.get_rent_month_display }} {{ payment.year }}
                     </td>
-                    <td>KES {{ payment.rent_amount }}</td>
-                    <td style="color: var(--accent-green);">KES {{ payment.amount_paid }}</td>
+                    <td>M {{ payment.rent_amount }}</td>
+                    <td style="color: var(--accent-green);">M {{ payment.amount_paid }}</td>
                     <td style="color: {% if payment.balance > 0 %}var(--danger){% else %}var(--success){% endif %};">
-                        KES {{ payment.balance }}
+                        M {{ payment.balance }}
                     </td>
                     <td>{{ payment.get_payment_method_display }}</td>
                     <td>

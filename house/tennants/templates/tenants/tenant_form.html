@@ -85,7 +85,7 @@
                     <option value="">Select a house</option>
                     {% for house in form.fields.house.queryset %}
                     <option value="{{ house.pk }}" {% if form.house.value == house.pk|stringformat:"i" or object.house.pk == house.pk %}selected{% endif %}>
-                        {{ house.flat_building.building_name }} - {{ house.house_number }} ({{ house.house_size }}) - KES {{ house.house_rent_amount }}
+                        {{ house.flat_building.building_name }} - {{ house.house_number }} ({{ house.house_size }}) - M {{ house.house_rent_amount }}
                     </option>
                     {% endfor %}
                 </select>

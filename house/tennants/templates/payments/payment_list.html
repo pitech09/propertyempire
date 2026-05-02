@@ -35,7 +35,7 @@
             <ul>
                 <li><strong>Tenant:</strong> Who made the payment</li>
                 <li><strong>Rent Charge:</strong> Which month/year the payment applies to</li>
-                <li><strong>Amount:</strong> The payment amount in KES</li>
+                <li><strong>Amount:</strong> The payment amount in M</li>
                 <li><strong>Method:</strong> Cash, Mobile Money, Bank Transfer, or Cheque</li>
                 <li><strong>Reference:</strong> Transaction ID (required for non-cash payments)</li>
             </ul>
@@ -106,7 +106,7 @@
                             {{ payment.rent_charge.get_month_display }} {{ payment.rent_charge.year }}
                         </a>
                     </td>
-                    <td style="color: var(--accent-green); font-weight: 600;">KES {{ payment.amount }}</td>
+                    <td style="color: var(--accent-green); font-weight: 600;">M {{ payment.amount }}</td>
                     <td>{{ payment.get_payment_method_display }}</td>
                     <td style="color: var(--text-muted); font-size: 0.85rem;">
                         {{ payment.payment_reference|default:"-" }}

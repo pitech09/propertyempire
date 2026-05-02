@@ -131,7 +131,7 @@
                             </td>
                             <td style="color: var(--accent-green); font-weight: 600;">
                                 {% if tenant.house %}
-                                KES {{ tenant.house.house_rent_amount }}
+                                M {{ tenant.house.house_rent_amount }}
                                 {% else %}
                                 -
                                 {% endif %}
@@ -158,7 +158,7 @@
             </div>
             <div>
                 <span style="color: var(--text-muted);">Total expected:</span>
-                <strong style="color: var(--accent-green); margin-left: 0.5rem;">KES <span id="total-amount">{{ total_rent }}</span></strong>
+                <strong style="color: var(--accent-green); margin-left: 0.5rem;">M <span id="total-amount">{{ total_rent }}</span></strong>
             </div>
         </div>
         {% endif %}

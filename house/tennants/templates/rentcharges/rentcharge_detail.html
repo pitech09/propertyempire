@@ -23,16 +23,16 @@
 <!-- Summary Cards -->
 <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 2rem;">
     <div class="stat-card">
-        <div class="stat-value">KES {{ rentcharge.amount_due }}</div>
+        <div class="stat-value">M {{ rentcharge.amount_due }}</div>
         <div class="stat-label">Amount Due</div>
     </div>
     <div class="stat-card" style="border-color: var(--accent-green);">
-        <div class="stat-value" style="color: var(--accent-green);">KES {{ rentcharge.total_paid }}</div>
+        <div class="stat-value" style="color: var(--accent-green);">M {{ rentcharge.total_paid }}</div>
         <div class="stat-label">Total Paid</div>
     </div>
     <div class="stat-card" style="border-color: {% if rentcharge.balance > 0 %}var(--danger){% else %}var(--success){% endif %};">
         <div class="stat-value" style="color: {% if rentcharge.balance > 0 %}var(--danger){% else %}var(--success){% endif %};">
-            KES {{ rentcharge.balance }}
+            M {{ rentcharge.balance }}
         </div>
         <div class="stat-label">Balance</div>
     </div>
@@ -110,7 +110,7 @@
                 {% for payment in rentcharge.payments.all %}
                 <tr>
                     <td>{{ payment.paid_at|date:"M d, Y H:i" }}</td>
-                    <td style="color: var(--accent-green); font-weight: 600;">KES {{ payment.amount }}</td>
+                    <td style="color: var(--accent-green); font-weight: 600;">M {{ payment.amount }}</td>
                     <td>{{ payment.get_payment_method_display }}</td>
                     <td style="color: var(--text-muted); font-size: 0.85rem;">
                         {{ payment.payment_reference|default:"-" }}

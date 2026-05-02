@@ -31,11 +31,11 @@
     </div>
     <div class="stat-card">
         <div class="stat-value" style="color: var(--accent-green);">{{ house.house_rent_amount }}</div>
-        <div class="stat-label">Monthly Rent (KES)</div>
+        <div class="stat-label">Monthly Rent (M)</div>
     </div>
     <div class="stat-card">
         <div class="stat-value">{{ house.deposit_amount }}</div>
-        <div class="stat-label">Security Deposit (KES)</div>
+        <div class="stat-label">Security Deposit (M)</div>
     </div>
 </div>
 
@@ -67,11 +67,11 @@
         </div>
         <div class="detail-item">
             <div class="detail-label">Monthly Rent</div>
-            <div class="detail-value" style="color: var(--accent-green);">KES {{ house.house_rent_amount }}</div>
+            <div class="detail-value" style="color: var(--accent-green);">M {{ house.house_rent_amount }}</div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Security Deposit</div>
-            <div class="detail-value">KES {{ house.deposit_amount }}</div>
+            <div class="detail-value">M {{ house.deposit_amount }}</div>
         </div>
     </div>
 </div>
@@ -110,7 +110,7 @@
         <div class="detail-item">
             <div class="detail-label">Balance</div>
             <div class="detail-value" style="color: {% if tenant.balance > 0 %}var(--danger){% else %}var(--success){% endif %};">
-                KES {{ tenant.balance }}
+                M {{ tenant.balance }}
             </div>
         </div>
         <div class="detail-item">
