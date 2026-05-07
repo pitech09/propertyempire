@@ -59,10 +59,11 @@ class House(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, db_index=True)
     flat_building = models.ForeignKey(FlatBuilding, related_name='houses', on_delete=models.CASCADE, db_index=True)
     house_number = models.CharField(max_length=5, db_index=True)
-    house_size = models.CharField(max_length=10, default='1 bedroom')
+    house_size = models.CharField(max_length=100, default='1 bedroom')
     house_rent_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, db_index=True)
     deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, db_index=True)
     occupation = models.BooleanField(default=False)
+    #Tenant = models.ForeignKey(Tenant, related_name='tenants', on_delete=models.CASCADE, db_index=True)
 
     class Meta:
         constraints = [
@@ -232,3 +233,21 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.amount} paid by {self.tenant.full_name} via {self.payment_method} on {self.paid_at.date()}"
+    
+class Issue(models.Model):
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("in_progress", "In Progress"),
+        ("resolved", "Resolved"),
+    ]
+
+    tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.status}"

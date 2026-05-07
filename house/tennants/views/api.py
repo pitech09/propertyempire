@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers, generics
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from tennants.models import Tenant, House, Payment, FlatBuilding, RentCharge
+from tennants.models import Issue, Tenant, House, Payment, FlatBuilding, RentCharge
 from tennants.serializers import (TenantSerializer, HouseSerializer, PaymentSerializer,
                           FlatBuildingSerializer, RegisterAdminSerializer, AdminLoginSerializer, ForgotPasswordSerializer)
 import logging
@@ -66,6 +66,26 @@ def set_cached_response(request, data, prefix=""):
 def clear_cache_pattern(request, prefix=""):
     cache.delete_pattern(f"*{prefix}*")
 
+    
+
+@api_view(["GET"])
+def tenant_issues_api(request):
+    if request.user.role != "tenant":
+        return Response({"error": "Not allowed"}, status=403)
+
+    tenant = Tenant.objects.get(user=request.user)
+    issues = Issue.objects.filter(tenant=tenant)
+
+    data = [
+        {
+            "title": i.title,
+            "status": i.status,
+            "created_at": i.created_at,
+        }
+        for i in issues
+    ]
+
+    return Response(data)
 
 # ============================================================================
 # TENANT VIEWS

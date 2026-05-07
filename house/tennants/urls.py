@@ -1,4 +1,5 @@
 from django.urls import path
+from tennants.views.tenants import report_issue, tenant_dashboard
 from tennants.views.web import (dashboard, BuildingListViewWeb, BuildingDetailViewWeb,
                     BuildingCreateViewWeb, BuildingUpdateViewWeb, BuildingDeleteViewWeb,
                     HouseListViewWeb, HouseDetailViewWeb,
@@ -60,6 +61,8 @@ urlpatterns = [
     path('tenants/<int:pk>/edit/', TenantUpdateViewWeb.as_view(), name='tenant_edit'),
     path('tenants/<int:pk>/delete/', TenantDeleteViewWeb.as_view(), name='tenant_delete'), 
 
+  
+
     # Payments
     path('payments/', PaymentListViewWeb.as_view(), name='payment_list'),
     path('payments/add/', PaymentCreateViewWeb.as_view(), name='payment_add'),
@@ -76,6 +79,9 @@ urlpatterns = [
 
     # notifications
     path('send-rent-reminders/', send_rent_reminders, name='send_rent_reminders'),
-
-
 ]
+
+urlpatterns += [        
+    path("tenant/dashboard/", tenant_dashboard, name="tenant_dashboard"),
+    path("tenant/report/", report_issue, name="report_issue"),
+    ] 

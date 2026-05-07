@@ -678,3 +678,4 @@ def send_rent_reminders(request):
     }
 
     return render(request, 'payments/send_sms.html', context)
+

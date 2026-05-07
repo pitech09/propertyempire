@@ -1,0 +1,32 @@
+<h1>Welcome {{ tenant.user.username }}</h1>
+
+<h2> Your Unit</h2>
+<p>{{ tenant.unit }}</p>
+
+<h2> Balance</h2>
+<p>{{ balance }}</p>
+
+<h2> Payments</h2>
+<ul>
+{% for p in payments %}
+  <li>{{ p.amount }} - {{ p.date }}</li>
+{% endfor %}
+</ul>
+
+<h2> Rent Charges</h2>
+<ul>
+{% for c in charges %}
+  <li>{{ c.month }} - {{ c.amount }}</li>
+{% endfor %}
+</ul>
+
+<h2>🛠️ Issues</h2>
+<a href="{% url 'report_issue' %}">Report Issue</a>
+
+<ul>
+{% for issue in issues %}
+  <li>{{ issue.title }} - {{ issue.status }}</li>
+{% empty %}
+  <li>No issues reported</li>
+{% endfor %}
+</ul>
