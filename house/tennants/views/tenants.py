@@ -7,17 +7,16 @@ from tennants.models import Tenant, Payment, RentCharge, Issue
 
 @login_required
 def tenant_dashboard(request):
-    if request.user.role != "tenant":
+    tenant = Tenant.objects.filter(user=request.user).first()
+    if tenant is None:
         return HttpResponseForbidden()
 
-    tenant = Tenant.objects.get(user=request.user)
-
-    payments = Payment.objects.filter(tenant=tenant).order_by("-date")
+    payments = Payment.objects.filter(tenant=tenant).order_by("-paid_at")
     charges = RentCharge.objects.filter(tenant=tenant).order_by("-month")
     issues = Issue.objects.filter(tenant=tenant).order_by("-created_at")
 
     total_paid = sum(p.amount for p in payments)
-    total_due = sum(c.amount for c in charges)
+    total_due = sum(c.amount_due for c in charges)
 
     context = {
         "tenant": tenant,
@@ -27,15 +26,14 @@ def tenant_dashboard(request):
         "balance": total_due - total_paid,
     }
 
-    return render(request, "tenant/dashboard.html", context)
+    return render(request, "tenants/dashboard.html", context)
 
 
 @login_required
 def report_issue(request):
-    if request.user.role != "tenant":
+    tenant = Tenant.objects.filter(user=request.user).first()
+    if tenant is None:
         return HttpResponseForbidden()
-
-    tenant = Tenant.objects.get(user=request.user)
 
     if request.method == "POST":
         title = request.POST.get("title")
@@ -49,4 +47,4 @@ def report_issue(request):
 
         return redirect("tenant_dashboard")
 
-    return render(request, "tenant/report_issue.html")
+    return render(request, "tenantviews/report_issue.html", {"tenant": tenant})

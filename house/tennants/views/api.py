@@ -429,6 +429,55 @@ def register(request):
 
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_login(request):
+    """Admin-specific login"""
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    user = authenticate(request, username=username, password=password)
+    
+    if user and (user.is_superuser or user.is_staff):
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access_token": str(refresh.access_token),
+            "refresh_token": str(refresh),
+            "role": "admin",
+            "redirect_url": "/admin/"
+        })
+    
+    return Response({"error": "Admin credentials required"}, status=401)
 
+@api_view(['POST'])
+@permission_classes([AllowAny])  # Remove for production!
+def create_test_tenant(request):
+    """Temporary endpoint to create test tenants - REMOVE IN PRODUCTION"""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    username = request.data.get('username')
+    password = request.data.get('password')
+    email = request.data.get('email')
+    
+    if User.objects.filter(username=username).exists():
+        return Response({"error": "User exists"}, status=400)
+    
+    user = User.objects.create_user(
+        username=username,
+        password=password,
+        email=email,
+        user_type='tenant'
+    )
+    
+    # Create tenant profile if using separate model
+    if 'Tenant' in globals():
+        Tenant.objects.create(user=user, phone=request.data.get('phone', ''))
+    
+    return Response({
+        "message": "Tenant created",
+        "username": username,
+        "password": password  # Only for testing!
+    }, status=201)
 
 

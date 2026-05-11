@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers, generics
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from tennants.models import Tenant, House, Payment, FlatBuilding, RentCharge
+from tennants.models import Tenant, House, Payment, FlatBuilding, RentCharge, Issue
 from tennants.serializers import (TenantSerializer, HouseSerializer, PaymentSerializer,
                           FlatBuildingSerializer, RegisterAdminSerializer, AdminLoginSerializer, ForgotPasswordSerializer)
 import logging
@@ -43,6 +43,7 @@ from django.shortcuts import render
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from tennants.services.sms import TwilioNotificationService
+from tennants.services.tenant_accounts import create_tenant_login_user, send_tenant_credentials_sms
 
 
 
@@ -78,12 +79,40 @@ def dashboard(request):
     buildings = FlatBuilding.objects.filter(user=request.user)
     total_houses = House.objects.filter(user=request.user).count()
     occupied_houses = House.objects.filter(user=request.user, occupation=True).count()
-    active_tenants = Tenant.objects.filter(user=request.user, is_active=True).count()
+    active_tenants = Tenant.objects.filter(house__user=request.user, is_active=True).count()
     
     # Recent payments (last 5)
     recent_payments = Payment.objects.filter(
         user=request.user
     ).order_by('-paid_at')[:5]
+
+    unpaid_charges = [
+        charge for charge in RentCharge.objects.filter(
+            tenant__house__user=request.user
+        ).select_related("tenant", "tenant__house").order_by("-year", "-month")
+        if not charge.is_paid
+    ][:5]
+
+    recent_issues = Issue.objects.filter(
+        tenant__house__user=request.user
+    ).select_related(
+        "tenant",
+        "tenant__house",
+        "tenant__house__flat_building",
+    ).order_by("-created_at")[:5]
+
+    pending_issues = Issue.objects.filter(
+        tenant__house__user=request.user,
+        status="pending",
+    ).count()
+    in_progress_issues = Issue.objects.filter(
+        tenant__house__user=request.user,
+        status="in_progress",
+    ).count()
+    resolved_issues = Issue.objects.filter(
+        tenant__house__user=request.user,
+        status="resolved",
+    ).count()
     
     # Calculate percentage of occupied houses (avoid division by zero)
     if total_houses:
@@ -98,6 +127,11 @@ def dashboard(request):
         'vacant_houses': total_houses - occupied_houses,
         'active_tenants': active_tenants,
         'recent_payments': recent_payments,
+        'unpaid_charges': unpaid_charges,
+        'recent_issues': recent_issues,
+        'pending_issues': pending_issues,
+        'in_progress_issues': in_progress_issues,
+        'resolved_issues': resolved_issues,
         'percent_occupied': percent_occupied,
     }
     return render(request, 'dashboard.html', context)
@@ -260,6 +294,10 @@ class HouseDetailViewWeb(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         # Get current tenant if any
         context['tenant'] = self.object.tenants.filter(is_active=True).first()
+        context['issues'] = Issue.objects.filter(
+            tenant__house=self.object,
+            tenant__house__user=self.request.user,
+        ).select_related("tenant").order_by("-created_at")
         return context
 
 
@@ -273,7 +311,7 @@ class TenantListViewWeb(LoginRequiredMixin, ListView):
     context_object_name = 'tenants'
     
     def get_queryset(self):
-        queryset = Tenant.objects.filter(user=self.request.user)
+        queryset = Tenant.objects.filter(house__user=self.request.user)
         # Optional filter by active status
         status = self.request.GET.get('status')
         if status == 'active':
@@ -299,10 +337,30 @@ class TenantCreateViewWeb(LoginRequiredMixin, CreateView):
         return form
     
     def form_valid(self, form):
-        form.instance.user = self.request.user
         try:
-            messages.success(self.request, 'Tenant added successfully!')
-            return super().form_valid(form)
+            with transaction.atomic():
+                tenant = form.save(commit=False)
+                tenant.user, password = create_tenant_login_user(
+                    tenant.full_name,
+                    email=tenant.email,
+                    phone=tenant.phone,
+                    id_number=tenant.id_number,
+                )
+                tenant._skip_welcome_sms = True
+                tenant.save()
+                form.save_m2m()
+                self.object = tenant
+
+                login_url = self.request.build_absolute_uri(reverse_lazy("login"))
+                transaction.on_commit(
+                    lambda: send_tenant_credentials_sms(tenant, password, login_url=login_url)
+                )
+
+            messages.success(
+                self.request,
+                f"Tenant added successfully. Login credentials were sent to {tenant.phone}.",
+            )
+            return redirect(self.get_success_url())
         except ValidationError as e:
             messages.error(self.request, str(e))
             return self.form_invalid(form)
@@ -315,7 +373,7 @@ class TenantUpdateViewWeb(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('tenant_list')
     
     def get_queryset(self):
-        return Tenant.objects.filter(user=self.request.user)
+        return Tenant.objects.filter(house__user=self.request.user)
     
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -334,7 +392,7 @@ class TenantDeleteViewWeb(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('tenant_list')
     
     def get_queryset(self):
-        return Tenant.objects.filter(user=self.request.user)
+        return Tenant.objects.filter(house__user=self.request.user)
 
 
 class TenantDetailViewWeb(LoginRequiredMixin, DetailView):
@@ -343,12 +401,13 @@ class TenantDetailViewWeb(LoginRequiredMixin, DetailView):
     context_object_name = 'tenant'
     
     def get_queryset(self):
-        return Tenant.objects.filter(user=self.request.user)
+        return Tenant.objects.filter(house__user=self.request.user)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Get payment history
         context['payments'] = self.object.payments.all().order_by('-paid_at')
+        context['issues'] = self.object.issue_set.all().order_by("-created_at")
         # context['overdue_payments'] = self.object.rent_payments.filter(is_paid=False)
         return context
 
@@ -379,7 +438,7 @@ class PaymentUpdateViewWeb(LoginRequiredMixin, UpdateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         # Only show user's tenants
-        form.fields['tenant'].queryset = Tenant.objects.filter(user=self.request.user)
+        form.fields['tenant'].queryset = Tenant.objects.filter(house__user=self.request.user)
         return form
     
     def form_valid(self, form):
@@ -401,7 +460,7 @@ class PaymentListViewWeb(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tenants'] = Tenant.objects.filter(user=self.request.user)
+        context['tenants'] = Tenant.objects.filter(house__user=self.request.user)
         return context
 
 class PaymentCreateViewWeb(LoginRequiredMixin, CreateView):
@@ -419,7 +478,7 @@ class PaymentCreateViewWeb(LoginRequiredMixin, CreateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         # Only show user's tenants
-        form.fields['tenant'].queryset = Tenant.objects.filter(user=self.request.user)
+        form.fields['tenant'].queryset = Tenant.objects.filter(house__user=self.request.user)
         return form
     
     def form_valid(self, form):
@@ -436,7 +495,7 @@ class RentChargeCreateViewWeb(LoginRequiredMixin, CreateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         # Only show user's tenants
-        form.fields['tenant'].queryset = Tenant.objects.filter(user=self.request.user)
+        form.fields['tenant'].queryset = Tenant.objects.filter(house__user=self.request.user)
         return form
     
  
@@ -466,7 +525,7 @@ class RentChargeListViewWeb(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tenants'] = Tenant.objects.filter(user=self.request.user)
+        context['tenants'] = Tenant.objects.filter(house__user=self.request.user)
         return context
 
 
@@ -481,7 +540,7 @@ class RentChargeUpdateViewWeb(LoginRequiredMixin, UpdateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         # Only show user's tenants
-        form.fields['tenant'].queryset = Tenant.objects.filter(user=self.request.user)
+        form.fields['tenant'].queryset = Tenant.objects.filter(house__user=self.request.user)
         return form
     
     def form_valid(self, form):
@@ -496,7 +555,7 @@ def bulk_create_rent_charges(request):
 
     # Filter by current user
     active_tenants = Tenant.objects.filter(
-        user=request.user, 
+        house__user=request.user, 
         is_active=True,
         house__isnull=False  # Only tenants with houses
     ).select_related("house")
@@ -540,7 +599,7 @@ def bulk_create_rent_charges(request):
         with transaction.atomic():
             for tenant_id in tenant_ids:
                 try:
-                    tenant = Tenant.objects.get(id=tenant_id, user=request.user)
+                    tenant = Tenant.objects.get(id=tenant_id, house__user=request.user)
                     
                     # Check if already exists
                     if RentCharge.objects.filter(
@@ -614,6 +673,7 @@ def send_rent_reminders(request):
         
         # Get all active tenants with SMS enabled
         active_tenants = Tenant.objects.filter(
+            house__user=request.user,
             is_active=True, 
             sms_notifications=True
         )
@@ -648,6 +708,7 @@ def send_rent_reminders(request):
     tenants_to_remind = []
     
     active_tenants = Tenant.objects.filter(
+        house__user=request.user,
         is_active=True, 
         sms_notifications=True
     )
@@ -678,4 +739,3 @@ def send_rent_reminders(request):
     }
 
     return render(request, 'payments/send_sms.html', context)
-

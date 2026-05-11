@@ -66,7 +66,7 @@ def send_welcome_message(sender, instance, created, **kwargs):
     """
     Send welcome message when new tenant is created and assigned to a house
     """
-    if created and instance.house and instance.is_active:
+    if created and instance.house and instance.is_active and not getattr(instance, "_skip_welcome_sms", False):
         logger.info(f"Sending welcome message to {instance.full_name}")
         success, result = notification_service.send_move_in_welcome(instance)
         

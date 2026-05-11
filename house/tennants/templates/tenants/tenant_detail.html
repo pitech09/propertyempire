@@ -170,4 +170,48 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Tenant Issues -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Maintenance Issues</h2>
+        {% if issues %}
+        <span class="badge badge-info">{{ issues.count }} reported</span>
+        {% endif %}
+    </div>
+
+    {% if issues %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Status</th>
+                    <th>Reported</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in issues %}
+                <tr>
+                    <td style="color: var(--text); font-weight: 600;">{{ issue.title }}</td>
+                    <td>
+                        <span class="badge {% if issue.status == 'resolved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ issue.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ issue.created_at|date:"M d, Y" }}</td>
+                    <td>{{ issue.description|truncatechars:110 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No issues reported</h3>
+        <p>Maintenance issues from this tenant will appear here.</p>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

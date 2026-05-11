@@ -68,6 +68,20 @@
         <div class="stat-value">{{ percent_occupied }}%</div>
         <div class="stat-label">Occupancy Rate</div>
     </div>
+    <div class="stat-card">
+        <div class="stat-value" style="{% if pending_issues %}color: var(--primary); background: none; -webkit-text-fill-color: var(--primary);{% endif %}">
+            {{ pending_issues }}
+        </div>
+        <div class="stat-label">Pending Issues</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ in_progress_issues }}</div>
+        <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ resolved_issues }}</div>
+        <div class="stat-label">Resolved Issues</div>
+    </div>
 </div>
 
 <!-- Quick Actions -->
@@ -129,6 +143,68 @@
         <h3>No buildings yet</h3>
         <p>Get started by adding your first building</p>
         <a href="{% url 'building_add' %}" class="btn btn-primary" style="margin-top: 1rem;">+ Add Building</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Maintenance Reports -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Maintenance Reports</h2>
+        <span class="badge badge-info">{{ recent_issues|length }} recent</span>
+    </div>
+
+    {% if recent_issues %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Tenant</th>
+                    <th>House</th>
+                    <th>Status</th>
+                    <th>Reported</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in recent_issues %}
+                <tr>
+                    <td style="color: var(--text-primary); font-weight: 500;">{{ issue.title }}</td>
+                    <td>
+                        <a href="{% url 'tenant_detail' issue.tenant.pk %}" style="color: var(--primary); text-decoration: none;">
+                            {{ issue.tenant.full_name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if issue.tenant.house %}
+                        <a href="{% url 'house_detail' issue.tenant.house.pk %}" style="color: var(--blue); text-decoration: none;">
+                            {{ issue.tenant.house.house_number }}
+                        </a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if issue.status == 'resolved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ issue.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ issue.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        {% if issue.tenant.house %}
+                        <a href="{% url 'house_detail' issue.tenant.house.pk %}" class="btn-icon" title="View House">👁</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No maintenance reports</h3>
+        <p>Issues reported by tenants will appear here.</p>
     </div>
     {% endif %}
 </div>

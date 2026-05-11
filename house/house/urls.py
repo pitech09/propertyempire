@@ -24,9 +24,9 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt import views as jwt_views
-from tennants import views
-from tennants.views.auth import RegistrationForm, register
+from tennants.views.auth import RegistrationForm, login_view, register
 from tennants.views.web import landing_page, dashboard
+from tennants.views.tenants import report_issue, tenant_dashboard
 
 
      
@@ -39,9 +39,11 @@ urlpatterns = [
     path("api/token/",jwt_views.TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", jwt_views.TokenRefreshView.as_view(), name="token_refresh"),
     path("register/", register, name="register"),
-    path("login/", auth_views.LoginView.as_view(template_name='login.html'), name="login"),
+    path("login/", login_view, name="login"),
     path("dashboard/", dashboard, name="dashboard"),
-    path("logout/", auth_views.LogoutView.as_view(), name="logout"),    
+    path("tenant/dashboard/", tenant_dashboard, name="tenant_dashboard"),
+    path("tenant/report/", report_issue, name="report_issue"),
+    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
 ]
 from django.urls import reverse_lazy
 

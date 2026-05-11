@@ -975,7 +975,7 @@
 
     <nav class="navbar">
         <div class="navbar-container">
-            <a href="{% url 'dashboard' %}" class="navbar-brand">
+            <a href="{% if request.user.tenant_set.exists %}{% url 'tenant_dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" class="navbar-brand">
                 <div class="brand-icon">
                     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                     
@@ -1024,12 +1024,17 @@
             </a>
             
             <ul class="navbar-nav">
+                {% if request.user.tenant_set.exists %}
+                <li><a href="{% url 'tenant_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'tenant_dashboard' %}active{% endif %}">Dashboard</a></li>
+                <li><a href="{% url 'report_issue' %}" class="nav-link {% if request.resolver_match.url_name == 'report_issue' %}active{% endif %}">Report Issue</a></li>
+                {% else %}
                 <li><a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a></li>
                 <li><a href="{% url 'building_list' %}" class="nav-link {% if 'building' in request.resolver_match.url_name %}active{% endif %}">Buildings</a></li>
                 <li><a href="{% url 'house_list' %}" class="nav-link {% if 'house' in request.resolver_match.url_name %}active{% endif %}">Houses</a></li>
                 <li><a href="{% url 'tenant_list' %}" class="nav-link {% if 'tenant' in request.resolver_match.url_name %}active{% endif %}">Tenants</a></li>
                 <li><a href="{% url 'rent_charge_list' %}" class="nav-link {% if 'rent_charge' in request.resolver_match.url_name %}active{% endif %}">Charges</a></li>
                 <li><a href="{% url 'payment_list' %}" class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">Payments</a></li>
+                {% endif %}
             </ul>
 
             <div class="navbar-user">

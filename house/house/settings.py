@@ -38,9 +38,11 @@ TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://propertyempire.onrender.com",
+    "http://localhost:8000",
     "http://localhost:8080",
+    "http://127.0.0.1:8000",
     "http://127.0.0.1:3000",
-    
 ]
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "propertyempire.onrender.com"]

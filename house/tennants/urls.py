@@ -15,8 +15,8 @@ from tennants.views.web import (dashboard, BuildingListViewWeb, BuildingDetailVi
 from tennants.views.api import (TenantListView, TenantDetailView,
                     HouseListView, HouseDetailView,
                     FlatBuildingListView, FlatBuildingDetailView,PaymentListView)
-from tennants.views.auth import AdminLogoutView, user_login, RegisterUserView, AdminLogoutView
-
+from tennants.views.auth import AdminLogoutView, login_view, RegisterUserView, AdminLogoutView
+from tennants.views.api import user_login
 
 # urlpatterns = [
 #     path('tennants/', TenantListView.as_view(), name = 'tennant-list'),
@@ -33,7 +33,6 @@ from tennants.views.auth import AdminLogoutView, user_login, RegisterUserView, A
 #     path('payments/api', PaymentListView.as_view(), name='payment-list'),
 #     path('register/user/api', RegisterUserView.as_view(), name='register-user'),
 # ]
-
 urlpatterns = [
     # ========================================
     # WEB INTERFACE (Template-based)
@@ -84,4 +83,5 @@ urlpatterns = [
 urlpatterns += [        
     path("tenant/dashboard/", tenant_dashboard, name="tenant_dashboard"),
     path("tenant/report/", report_issue, name="report_issue"),
+
     ] 
