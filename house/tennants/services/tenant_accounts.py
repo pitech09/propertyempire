@@ -26,7 +26,7 @@ def generate_tenant_password(id_number="", phone=""):
     if not identifier:
         identifier = "".join(char for char in str(phone or "") if char.isdigit())[-6:]
     return f"tenant{identifier or '123'}"
-
+    
 
 def create_tenant_login_user(full_name, email="", phone="", id_number=""):
     User = get_user_model()
