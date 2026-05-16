@@ -306,4 +306,4 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-KEEPALIVE_URL = "http://propertyempire.onrender.com/health/"
+KEEPALIVE_URL = "http://propertyempire.onrender.com/api/health/"        

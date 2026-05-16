@@ -251,3 +251,32 @@ class Issue(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.status}"
+    
+class PaymentRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    PAYMENT_METHODS = [
+        ('cash', 'Cash'),
+        ('mobile_money', 'Mobile Money'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('cheque', 'Cheque'),
+    ]
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    rent_charge = models.ForeignKey(RentCharge, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    payment_reference = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        if self.payment_method != "cash" and not self.payment_reference:
+            raise ValidationError({
+                "payment_reference": "Reference required for non-cash payments"
+            })
+        
+        if self.rent_charge and self.tenant != self.rent_charge.tenant:
+            raise ValidationError("Payment tenant must match rent charge tenant")
