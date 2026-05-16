@@ -1,5 +1,5 @@
 from django.urls import path
-from tennants.views.tenants import report_issue, tenant_dashboard
+from tennants.views.tenants import report_issue, tenant_dashboard,  health
 from tennants.views.web import (dashboard, BuildingListViewWeb, BuildingDetailViewWeb,
                     BuildingCreateViewWeb, BuildingUpdateViewWeb, BuildingDeleteViewWeb,
                     HouseListViewWeb, HouseDetailViewWeb,
@@ -38,6 +38,7 @@ urlpatterns = [
     # WEB INTERFACE (Template-based)
     # ========================================
     path('', dashboard, name='dashboard'),
+    path('health/', health, name='health_check'),
     
     # Buildings
     path('buildings/', BuildingListViewWeb.as_view(), name='building_list'),

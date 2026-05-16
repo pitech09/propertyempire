@@ -1,9 +1,15 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from django.http import JsonResponse
 
 from tennants.models import Tenant, Payment, RentCharge, Issue
 
+
+def health(request):
+    return JsonResponse({
+        "status": "ok"
+    })
 
 @login_required
 def tenant_dashboard(request):
