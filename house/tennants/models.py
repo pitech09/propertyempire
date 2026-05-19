@@ -186,6 +186,32 @@ class PasswordResetCode(models.Model):
         self.used_at = timezone.now()
         self.save(update_fields=["used_at"])
 
+
+class SMSRetryMessage(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("sent", "Sent"),
+        ("failed", "Failed"),
+    ]
+
+    to_number = models.CharField(max_length=128, db_index=True)
+    message = models.TextField()
+    provider = models.CharField(max_length=32, default="textbee")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending", db_index=True)
+    attempts = models.PositiveIntegerField(default=0)
+    max_attempts = models.PositiveIntegerField(default=5)
+    next_attempt_at = models.DateTimeField(db_index=True)
+    last_error = models.TextField(blank=True)
+    external_id = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("next_attempt_at", "created_at")
+
+    def __str__(self):
+        return f"{self.to_number} - {self.status} ({self.attempts}/{self.max_attempts})"
+
 # ------------------------------
 # RentCharge Model (Obligation)
 # ------------------------------

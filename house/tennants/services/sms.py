@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.utils import timezone
+from datetime import timedelta
 import logging
 import os
 import requests
@@ -18,12 +19,17 @@ class TwilioNotificationService:
         self.textbee_base_url = getattr(settings, "TEXTBEE_BASE_URL", "https://api.textbee.dev/api/v1").rstrip("/")
         self.textbee_sim_subscription_id = getattr(settings, "TEXTBEE_SIM_SUBSCRIPTION_ID", None)
     
-    def send_sms(self, to_number, message):
+    def send_sms(self, to_number, message, queue_on_failure=True):
         """Send SMS through the configured provider."""
         message = self._prepare_sms_message(message)
         if self.provider == "textbee":
-            return self._send_textbee_sms(to_number, message)
-        return self._send_twilio_sms(to_number, message)
+            success, result = self._send_textbee_sms(to_number, message)
+        else:
+            success, result = self._send_twilio_sms(to_number, message)
+
+        if not success and queue_on_failure:
+            self._queue_failed_sms(to_number, message, result)
+        return success, result
 
     def _prepare_sms_message(self, message):
         message = " ".join(str(message).split())
@@ -32,6 +38,22 @@ class TwilioNotificationService:
             logger.warning("SMS message trimmed from %s to %s characters", len(message), max_length)
             return message[: max_length - 3].rstrip() + "..."
         return message
+
+    def _queue_failed_sms(self, to_number, message, error):
+        if not to_number:
+            return
+
+        from tennants.models import SMSRetryMessage
+
+        retry_interval = getattr(settings, "SMS_RETRY_INTERVAL_MINUTES", 6)
+        SMSRetryMessage.objects.create(
+            to_number=str(to_number),
+            message=message,
+            provider=self.provider,
+            max_attempts=getattr(settings, "SMS_RETRY_MAX_ATTEMPTS", 5),
+            next_attempt_at=timezone.now() + timedelta(minutes=retry_interval),
+            last_error=str(error),
+        )
 
     def _get_twilio_client(self):
         if self.client is None:

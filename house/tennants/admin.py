@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import LandlordProfile, PasswordResetCode, Tenant, House, Payment, FlatBuilding, RentCharge, Issue
+from .models import LandlordProfile, PasswordResetCode, SMSRetryMessage, Tenant, House, Payment, FlatBuilding, RentCharge, Issue
 from django.contrib.auth.models import Group
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -159,3 +159,11 @@ class PasswordResetCodeAdmin(admin.ModelAdmin):
     list_display = ("user", "code", "created_at", "expires_at", "used_at")
     readonly_fields = ("user", "code", "created_at", "expires_at", "used_at")
     search_fields = ("user__username", "code")
+
+
+@admin.register(SMSRetryMessage)
+class SMSRetryMessageAdmin(admin.ModelAdmin):
+    list_display = ("to_number", "provider", "status", "attempts", "max_attempts", "next_attempt_at", "updated_at")
+    list_filter = ("status", "provider")
+    search_fields = ("to_number", "message", "last_error")
+    readonly_fields = ("created_at", "updated_at")
