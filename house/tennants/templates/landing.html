@@ -100,13 +100,79 @@
             z-index: 100;
             background: linear-gradient(to bottom, var(--dark) 0%, transparent 100%);
         }
+        .install-banner {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(520px, calc(100% - 32px));
+        background: rgba(26, 26, 36, 0.92);
+        border: 1px solid rgba(220, 241, 28, 0.25);
+        backdrop-filter: blur(14px);
+        border-radius: 16px;
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        z-index: 999;
+        transition: all 0.3s ease;
+    }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-        }
+    .install-banner.hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    .install-text strong {
+        display: block;
+        font-size: 0.95rem;
+        color: var(--text);
+    }
+
+    .install-text span {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .install-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .install-btn {
+        background: var(--primary);
+        color: var(--dark);
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: 0.2s;
+    }
+
+    .install-btn:hover {
+        background: var(--secondary);
+    }
+
+    .install-close {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+            }
 
         .logo-icon {
             width: 44px;
@@ -1347,7 +1413,23 @@
             </a>
         </section>
     </main>
+    <!-- INSTALL BANNER (non-intrusive APK / App prompt) -->
+    <div id="installBanner" class="install-banner hidden">
+        <div class="install-text">
+            <strong>Install PropertyEmpire</strong>
+            <span>Get faster access </span>
+        </div>
 
+        <div class="install-actions">
+            <a href="https://github.com/pitech09/PropertyEmpire/releases/download/e/propertyempire.apk" class="install-btn">
+                Download APK
+            </a>
+
+            <button class="install-close" onclick="dismissInstallBanner()">
+                ✕
+            </button>
+        </div>
+    </div>
     <footer>
     <p class="footer-text">© 2026 PropertyEmpire. Built for landlords who value their time. Open Sourced.</p>
         <div class="footer-links">
@@ -1355,5 +1437,46 @@
             <a href="{% url 'register' %}">Register</a>
         </div>
     </footer>
-</body>
+</body><script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    let deferredPrompt;
+
+    const banner = document.getElementById("installBanner");
+
+    if (!banner) return; // safety guard
+
+    // Detect mobile (better than only Android)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    const dismissed = localStorage.getItem("installBannerDismissed");
+
+    // PWA hook (optional future use)
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
+
+    // Show banner softly
+    window.addEventListener("load", () => {
+        if (isMobile && !dismissed) {
+            setTimeout(() => {
+                banner.classList.remove("hidden");
+            }, 2500);
+        }
+    });
+
+    // Dismiss function
+    window.dismissInstallBanner = function () {
+        banner.classList.add("hidden");
+        localStorage.setItem("installBannerDismissed", "true");
+    };
+
+    // Button click
+    document.querySelector(".install-btn")?.addEventListener("click", () => {
+        window.dismissInstallBanner();
+    });
+
+});
+</script>
 </html>
