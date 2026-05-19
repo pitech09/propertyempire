@@ -7,9 +7,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers, generics
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from tennants.models import Issue, Tenant, House, Payment, FlatBuilding, RentCharge
+from tennants.models import Issue, Tenant, House, Payment, FlatBuilding, RentCharge, PaymentRequest
 from tennants.serializers import (TenantSerializer, HouseSerializer, PaymentSerializer,
-                          FlatBuildingSerializer, RegisterAdminSerializer, AdminLoginSerializer, ForgotPasswordSerializer)
+                          FlatBuildingSerializer, RegisterAdminSerializer, AdminLoginSerializer,
+                          ForgotPasswordSerializer, RentChargeSerializer)
 import logging
 import requests
 from django.conf import settings
@@ -69,11 +70,12 @@ def clear_cache_pattern(request, prefix=""):
     
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def tenant_issues_api(request):
-    if request.user.role != "tenant":
+    tenant = Tenant.objects.filter(user=request.user).first()
+    if tenant is None:
         return Response({"error": "Not allowed"}, status=403)
 
-    tenant = Tenant.objects.get(user=request.user)
     issues = Issue.objects.filter(tenant=tenant)
 
     data = [
@@ -100,7 +102,7 @@ class TenantListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         """Filter tenants to only show current user's tenants"""
-        return Tenant.objects.filter(user=self.request.user).order_by('id')
+        return Tenant.objects.filter(house__user=self.request.user).order_by('id')
     
     def get(self, request, *args, **kwargs):
         cached = get_cached_response(request, prefix="tenants")
@@ -116,7 +118,7 @@ class TenantListView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
     #    return proper response on capacity validation error during tenant creation
         try:
-            tenant = serializer.save(user=self.request.user)
+            tenant = serializer.save()
             clear_cache_pattern(self.request, "tenants")
         except ValidationError as e:
             raise serializers.ValidationError({"detail": str(e)})
@@ -127,7 +129,7 @@ class TenantDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         """Filter to user's tenants, optionally by house_id"""
-        queryset = Tenant.objects.filter(user=self.request.user)
+        queryset = Tenant.objects.filter(house__user=self.request.user)
         house_id = self.request.query_params.get('house_id')
         if house_id:
             queryset = queryset.filter(house_id=house_id)
@@ -252,7 +254,7 @@ class PaymentListView(generics.ListCreateAPIView):
     def get_queryset(self):
         """Only show paid payments for current user"""
         return Payment.objects.filter(
-            user=self.request.user
+            tenant__house__user=self.request.user
         ).order_by('id')
 
     def get(self, request, *args, **kwargs):
@@ -274,7 +276,7 @@ class PaymentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         """Filter to user's payments, optionally by tenant"""
-        queryset = Payment.objects.filter(user=self.request.user)
+        queryset = Payment.objects.filter(tenant__house__user=self.request.user)
         
         tenant_id = self.request.query_params.get('tenant_id')
         if tenant_id:
@@ -284,13 +286,13 @@ class PaymentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class RentChargeListView(generics.ListCreateAPIView):
-    serializer_class = PaymentSerializer
+    serializer_class = RentChargeSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """Only show rent charges for current user"""
         return RentCharge.objects.filter(
-            user=self.request.user
+            tenant__house__user=self.request.user
         ).order_by('id')
 
     def get(self, request, *args, **kwargs):
@@ -306,12 +308,12 @@ class RentChargeListView(generics.ListCreateAPIView):
         clear_cache_pattern(self.request, "rent_charges")
 
 class RentChargeDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = PaymentSerializer
+    serializer_class = RentChargeSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """Filter to user's rent charges, optionally by tenant"""
-        queryset = RentCharge.objects.filter(user=self.request.user)
+        queryset = RentCharge.objects.filter(tenant__house__user=self.request.user)
         
         tenant_id = self.request.query_params.get('tenant_id')
         if tenant_id:
@@ -461,11 +463,15 @@ def forgot_password(request):
     return Response({"message": f"If an account with {email} exists, a reset link has been sent."})
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def paymentrequests(request):
-    """Temporary endpoint to list all payment requests - REMOVE IN PRODUCTION"""
-    from tennants.models import PaymentRequest
-    requests = PaymentRequest.objects.all()
+    """List payment requests visible to the signed-in user."""
+    if request.user.is_staff or request.user.is_superuser:
+        requests = PaymentRequest.objects.select_related("tenant").all()
+    else:
+        requests = PaymentRequest.objects.select_related("tenant").filter(
+            tenant__house__user=request.user
+        )
     data = [
         {
             "tenant": pr.tenant.full_name,
@@ -479,9 +485,11 @@ def paymentrequests(request):
     return Response(data)
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # Remove for production!
+@permission_classes([IsAuthenticated])
 def create_test_tenant(request):
-    """Temporary endpoint to create test tenants - REMOVE IN PRODUCTION"""
+    """Create a tenant only for staff during development."""
+    if not (request.user.is_staff or request.user.is_superuser):
+        return Response({"error": "Not allowed"}, status=403)
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
@@ -508,5 +516,3 @@ def create_test_tenant(request):
         "username": username,
         "password": password  # Only for testing!
     }, status=201)
-
-

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tenant, House, Payment, FlatBuilding, RentCharge, Issue
+from .models import LandlordProfile, PasswordResetCode, Tenant, House, Payment, FlatBuilding, RentCharge, Issue
 from django.contrib.auth.models import Group
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -9,6 +9,20 @@ from django.db import transaction
 from tennants.services.tenant_accounts import create_tenant_login_user, send_tenant_credentials_sms
 
 admin.site.site_header = 'House Administration'
+
+
+class LandlordProfileInline(admin.StackedInline):
+    model = LandlordProfile
+    can_delete = False
+    extra = 0
+
+
+admin.site.unregister(User)
+
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    inlines = (LandlordProfileInline,)
 
 
 @admin.register(Tenant)
@@ -131,3 +145,17 @@ class IssueAdmin(admin.ModelAdmin):
         if obj.tenant and obj.tenant.house and obj.tenant.house.flat_building:
             return obj.tenant.house.flat_building.building_name
         return "-"
+
+
+@admin.register(LandlordProfile)
+class LandlordProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "phone", "sms_notifications", "updated_at")
+    search_fields = ("user__username", "user__email", "phone")
+    list_filter = ("sms_notifications",)
+
+
+@admin.register(PasswordResetCode)
+class PasswordResetCodeAdmin(admin.ModelAdmin):
+    list_display = ("user", "code", "created_at", "expires_at", "used_at")
+    readonly_fields = ("user", "code", "created_at", "expires_at", "used_at")
+    search_fields = ("user__username", "code")

@@ -11,11 +11,17 @@ User = get_user_model()
 
 
 class TenantSerializer(serializers.ModelSerializer):
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Tenant
         fields = '__all__'
+
+    def validate_house(self, house):
+        request = self.context.get("request")
+        if house and request and house.user_id != request.user.id:
+            raise serializers.ValidationError("You can only assign tenants to your own houses.")
+        return house
 
 class HouseSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -25,11 +31,10 @@ class HouseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, attrs):
-        building = attrs.get('building')
-        if building and building.houses.count() >= building.capacity:
-            raise serializers.ValidationError(
-                f"Cannot add house. {building.name} can only have {building.capacity} houses."
-            )
+        request = self.context.get("request")
+        building = attrs.get("flat_building") or getattr(self.instance, "flat_building", None)
+        if building and request and building.user_id != request.user.id:
+            raise serializers.ValidationError("You can only use your own buildings.")
         return attrs
     
 class FlatBuildingSerializer(serializers.ModelSerializer):
@@ -46,14 +51,32 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = '__all__'
 
+    def validate(self, attrs):
+        request = self.context.get("request")
+        tenant = attrs.get("tenant") or getattr(self.instance, "tenant", None)
+        rent_charge = attrs.get("rent_charge") or getattr(self.instance, "rent_charge", None)
+
+        if request:
+            if tenant and (not tenant.house or tenant.house.user_id != request.user.id):
+                raise serializers.ValidationError("You can only record payments for your own tenants.")
+            if rent_charge and (
+                not rent_charge.tenant.house or rent_charge.tenant.house.user_id != request.user.id
+            ):
+                raise serializers.ValidationError("You can only use your own rent charges.")
+        if tenant and rent_charge and tenant != rent_charge.tenant:
+            raise serializers.ValidationError("Payment tenant must match rent charge tenant.")
+        return attrs
+
 class RegisterAdminSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    phone = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'email', 'first_name', 'last_name']
+        fields = ['username', 'password', 'email', 'first_name', 'last_name', 'phone']
 
     def create(self, validated_data):
+        phone = validated_data.pop("phone", None)
         user = User(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
@@ -63,6 +86,9 @@ class RegisterAdminSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.is_staff = True
         user.save()
+        if phone:
+            from tennants.models import LandlordProfile
+            LandlordProfile.objects.create(user=user, phone=phone)
         return user
 
 class ForgotPasswordSerializer(serializers.Serializer):
@@ -119,3 +145,9 @@ class RentChargeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RentCharge
         fields = '__all__'
+
+    def validate_tenant(self, tenant):
+        request = self.context.get("request")
+        if tenant and request and (not tenant.house or tenant.house.user_id != request.user.id):
+            raise serializers.ValidationError("You can only create rent charges for your own tenants.")
+        return tenant

@@ -32,6 +32,13 @@ def _landlord_for_tenant(tenant):
     return tenant.house.user if tenant.house else None
 
 
+def _landlord_sms_number(landlord):
+    profile = getattr(landlord, "landlord_profile", None)
+    if profile and profile.sms_notifications and profile.phone:
+        return profile.phone
+    return getattr(settings, "LANDLORD_SMS_NUMBER", None)
+
+
 def _payment_request_message(payment_request):
     tenant = payment_request.tenant
     charge = payment_request.rent_charge
@@ -55,11 +62,11 @@ def notify_landlord_payment_request(payment_request):
     subject = f"New payment request from {payment_request.tenant.full_name}"
     message = _payment_request_message(payment_request)
 
-    sms_number = getattr(settings, "LANDLORD_SMS_NUMBER", None)
+    sms_number = _landlord_sms_number(landlord)
     if sms_number:
         TwilioNotificationService().send_sms(sms_number, message)
     else:
-        logger.info("LANDLORD_SMS_NUMBER is not configured")
+        logger.info("No landlord SMS number configured for user %s", landlord.pk)
 
     whatsapp_number = getattr(settings, "LANDLORD_WHATSAPP_NUMBER", None)
     if whatsapp_number:
@@ -68,6 +75,28 @@ def notify_landlord_payment_request(payment_request):
         logger.info("LANDLORD_WHATSAPP_NUMBER is not configured")
 
     _send_email_backup(subject, message, [landlord.email])
+
+
+def notify_tenant_payment_request_status(payment_request):
+    tenant = payment_request.tenant
+    status_label = payment_request.get_status_display().lower()
+    subject = f"Payment request {status_label}"
+
+    message = (
+        f"Payment request {status_label}: M{payment_request.amount} for "
+        f"{payment_request.rent_charge.get_month_display()} {payment_request.rent_charge.year} rent."
+    )
+    if payment_request.status == "approved":
+        message += " Your payment has been recorded."
+    elif payment_request.status == "rejected":
+        message += " Please contact your landlord."
+
+    if tenant.phone and tenant.sms_notifications:
+        TwilioNotificationService().send_sms(tenant.phone, message)
+    else:
+        logger.info("Tenant %s has no enabled SMS number for payment request status", tenant.pk)
+
+    _send_email_backup(subject, message, [tenant.email])
 
 
 def _issue_report_message(issue):
@@ -91,11 +120,11 @@ def notify_landlord_issue_report(issue):
     subject = f"New maintenance request from {issue.tenant.full_name}"
     message = _issue_report_message(issue)
 
-    sms_number = getattr(settings, "LANDLORD_SMS_NUMBER", None)
+    sms_number = _landlord_sms_number(landlord)
     if sms_number:
         TwilioNotificationService().send_sms(sms_number, message)
     else:
-        logger.info("LANDLORD_SMS_NUMBER is not configured")
+        logger.info("No landlord SMS number configured for user %s", landlord.pk)
 
     whatsapp_number = getattr(settings, "LANDLORD_WHATSAPP_NUMBER", None)
     if whatsapp_number:
@@ -118,5 +147,26 @@ def notify_tenant_issue_approved(issue):
         TwilioNotificationService().send_sms(tenant.phone, message)
     else:
         logger.info("Tenant %s has no phone for maintenance approval SMS", tenant.pk)
+
+    _send_email_backup(subject, message, [tenant.email])
+
+
+def notify_tenant_issue_status(issue):
+    tenant = issue.tenant
+    status_label = issue.get_status_display().lower()
+    subject = f"Maintenance request {status_label}: {issue.title}"
+    message = f"Maintenance update: '{issue.title}' is now {status_label}."
+
+    if issue.status == "approved":
+        message += " Help will be sent within a week."
+    elif issue.status == "in_progress":
+        message += " Work has started."
+    elif issue.status == "resolved":
+        message += " Please contact your landlord if the issue remains."
+
+    if tenant.phone and tenant.sms_notifications:
+        TwilioNotificationService().send_sms(tenant.phone, message)
+    else:
+        logger.info("Tenant %s has no enabled SMS number for issue status", tenant.pk)
 
     _send_email_backup(subject, message, [tenant.email])

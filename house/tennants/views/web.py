@@ -46,7 +46,10 @@ from django.db.models import Sum
 from django.http import HttpResponseForbidden
 from tennants.services.sms import TwilioNotificationService
 from tennants.services.tenant_accounts import create_tenant_login_user, send_tenant_credentials_sms
-from tennants.services.payment_requests import notify_tenant_issue_approved
+from tennants.services.payment_requests import (
+    notify_tenant_issue_status,
+    notify_tenant_payment_request_status,
+)
 from decimal import Decimal
 
 
@@ -682,6 +685,9 @@ class PaymentRequestUpdateViewWeb(LoginRequiredMixin, UpdateView):
                 payment_reference=self.object.payment_reference,
             )
 
+        if self.object.status != old_status and self.object.status in {"approved", "rejected"}:
+            transaction.on_commit(lambda: notify_tenant_payment_request_status(self.object))
+
         messages.success(self.request, "Payment request status updated successfully!")
         return response
 
@@ -733,8 +739,8 @@ class IssueUpdateViewWeb(LoginRequiredMixin, UpdateView):
         old_status = Issue.objects.get(pk=form.instance.pk).status
         response = super().form_valid(form)
 
-        if old_status == "pending" and self.object.status == "approved":
-            transaction.on_commit(lambda: notify_tenant_issue_approved(self.object))
+        if old_status != self.object.status:
+            transaction.on_commit(lambda: notify_tenant_issue_status(self.object))
 
         messages.success(self.request, "Maintenance report status updated successfully!")
         return response
@@ -748,7 +754,7 @@ class PaymentDetailViewWeb(LoginRequiredMixin, DetailView):
     context_object_name = 'payment'
     
     def get_queryset(self):
-        return Payment.objects.filter(user=self.request.user)
+        return Payment.objects.filter(tenant__house__user=self.request.user)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -756,19 +762,28 @@ class PaymentDetailViewWeb(LoginRequiredMixin, DetailView):
 
 class PaymentUpdateViewWeb(LoginRequiredMixin, UpdateView):
     model = Payment
+    fields = [
+        "tenant",
+        "rent_charge",
+        "amount",
+        "payment_reference",
+        "payment_method",
+    ]
     template_name = 'payments/payment_form.html'
     success_url = reverse_lazy('payment_list')
     
     def get_queryset(self):
-        return Payment.objects.filter(user=self.request.user)
+        return Payment.objects.filter(tenant__house__user=self.request.user)
     
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         # Only show user's tenants
         form.fields['tenant'].queryset = Tenant.objects.filter(house__user=self.request.user)
+        form.fields['rent_charge'].queryset = RentCharge.objects.filter(tenant__house__user=self.request.user)
         return form
     
     def form_valid(self, form):
+        form.instance.user = self.request.user
         messages.success(self.request, 'Payment updated successfully!')
         return super().form_valid(form)
 
@@ -778,7 +793,7 @@ class PaymentListViewWeb(LoginRequiredMixin, ListView):
     context_object_name = 'payments'
     
     def get_queryset(self):
-        queryset = Payment.objects.filter(user=self.request.user)
+        queryset = Payment.objects.filter(tenant__house__user=self.request.user)
         # Optional filter by tenant
         tenant_id = self.request.GET.get('tenant')
         if tenant_id:
@@ -806,6 +821,7 @@ class PaymentCreateViewWeb(LoginRequiredMixin, CreateView):
         form = super().get_form(form_class)
         # Only show user's tenants
         form.fields['tenant'].queryset = Tenant.objects.filter(house__user=self.request.user)
+        form.fields['rent_charge'].queryset = RentCharge.objects.filter(tenant__house__user=self.request.user)
         return form
     
     def form_valid(self, form):
@@ -827,6 +843,7 @@ class RentChargeCreateViewWeb(LoginRequiredMixin, CreateView):
         return form
 
     def form_valid(self, form):
+        form.instance.user = self.request.user
         try:
             return super().form_valid(form)
         except IntegrityError:
@@ -840,7 +857,7 @@ class RentChargeDetailViewWeb(LoginRequiredMixin, DetailView):
     context_object_name = 'rentcharge'
     
     def get_queryset(self):
-        return RentCharge.objects.filter(user=self.request.user)
+        return RentCharge.objects.filter(tenant__house__user=self.request.user)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -855,7 +872,11 @@ class RentChargeListViewWeb(LoginRequiredMixin, ListView):
 
     # display only rent charges for current user
     def get_queryset(self):
-        return RentCharge.objects.filter(user=self.request.user).order_by('-year', '-month')
+        queryset = RentCharge.objects.filter(tenant__house__user=self.request.user)
+        tenant_id = self.request.GET.get("tenant")
+        if tenant_id:
+            queryset = queryset.filter(tenant_id=tenant_id)
+        return queryset.order_by('-year', '-month')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -865,11 +886,12 @@ class RentChargeListViewWeb(LoginRequiredMixin, ListView):
 
 class RentChargeUpdateViewWeb(LoginRequiredMixin, UpdateView):
     model = RentCharge
+    fields = ['tenant', 'year', 'month', 'amount_due']
     template_name = 'rentcharges/rentcharge_form.html'
     success_url = reverse_lazy('rent_charge_list')
     
     def get_queryset(self):
-        return RentCharge.objects.filter(user=self.request.user)
+        return RentCharge.objects.filter(tenant__house__user=self.request.user)
     
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -878,8 +900,13 @@ class RentChargeUpdateViewWeb(LoginRequiredMixin, UpdateView):
         return form
     
     def form_valid(self, form):
+        form.instance.user = self.request.user
         messages.success(self.request, 'Rent charge updated successfully!')
-        return super().form_valid(form)
+        try:
+            return super().form_valid(form)
+        except IntegrityError:
+            form.add_error(None, "Rent charge already exists for this tenant/month/year.")
+            return self.form_invalid(form)
 
 
 @login_required

@@ -72,8 +72,8 @@ urlpatterns = [
     # Payments
     path('payments/', PaymentListViewWeb.as_view(), name='payment_list'),
     path('payments/add/', PaymentCreateViewWeb.as_view(), name='payment_add'),
-    path('payments/<int:pk>/', PaymentListViewWeb.as_view(), name='payment_detail'),
-    path('payments/<int:pk>/edit/', PaymentDetailViewWeb.as_view(), name='payment_edit'),
+    path('payments/<int:pk>/', PaymentDetailViewWeb.as_view(), name='payment_detail'),
+    path('payments/<int:pk>/edit/', PaymentUpdateViewWeb.as_view(), name='payment_edit'),
 
     #paymentrequest
     path('payment-requests/', PaymentRequestListViewWeb.as_view(), name='payment_request_list'),

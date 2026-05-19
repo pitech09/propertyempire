@@ -24,7 +24,13 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt import views as jwt_views
-from tennants.views.auth import RegistrationForm, login_view, register
+from tennants.views.auth import (
+    RegistrationForm,
+    login_view,
+    register,
+    sms_password_reset_confirm,
+    sms_password_reset_request,
+)
 from tennants.views.web import landing_page, dashboard
 from tennants.views.tenants import report_issue, tenant_dashboard
 
@@ -40,6 +46,8 @@ urlpatterns = [
     path("api/token/refresh/", jwt_views.TokenRefreshView.as_view(), name="token_refresh"),
     path("register/", register, name="register"),
     path("login/", login_view, name="login"),
+    path("password-reset/", sms_password_reset_request, name="sms_password_reset"),
+    path("password-reset/confirm/", sms_password_reset_confirm, name="sms_password_reset_confirm"),
     path("dashboard/", dashboard, name="dashboard"),
     path("tenant/dashboard/", tenant_dashboard, name="tenant_dashboard"),
     path("tenant/report/", report_issue, name="report_issue"),

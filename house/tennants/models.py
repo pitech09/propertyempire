@@ -156,6 +156,36 @@ class Tenant(models.Model):
     def __str__(self):
         return self.full_name
 
+
+class LandlordProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="landlord_profile")
+    phone = PhoneNumberField(unique=True, db_index=True)
+    sms_notifications = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name() or self.user.username} - {self.phone}"
+
+
+class PasswordResetCode(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sms_password_reset_codes")
+    code = models.CharField(max_length=6, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+    used_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    @property
+    def is_valid(self):
+        return self.used_at is None and self.expires_at >= timezone.now()
+
+    def mark_used(self):
+        self.used_at = timezone.now()
+        self.save(update_fields=["used_at"])
+
 # ------------------------------
 # RentCharge Model (Obligation)
 # ------------------------------

@@ -40,7 +40,7 @@
             <select name="tenant" id="id_tenant" class="form-control" required>
                 <option value="">Select a tenant</option>
                 {% for tenant in form.fields.tenant.queryset %}
-                <option value="{{ tenant.pk }}" {% if form.tenant.value == tenant.pk|stringformat:"i" %}selected{% endif %}>
+                <option value="{{ tenant.pk }}" {% if form.tenant.value|stringformat:"s" == tenant.pk|stringformat:"s" %}selected{% endif %}>
                     {{ tenant.full_name }}{% if tenant.house %} - {{ tenant.house.house_number }} (M {{ tenant.house.house_rent_amount }}/month){% endif %}
                 </option>
                 {% endfor %}
