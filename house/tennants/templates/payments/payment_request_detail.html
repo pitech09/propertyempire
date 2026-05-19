@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Request - House Management{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    <span>/</span>
+    <a href="{% url 'payment_request_list' %}">Payment Requests</a>
+    <span>/</span>
+    <span>{{ payment_request.tenant.full_name }}</span>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">Payment <span>Request</span></h1>
+    <a href="{% url 'payment_request_edit' payment_request.pk %}" class="btn btn-primary">Update Status</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Request Details</h2>
+        <span class="badge {% if payment_request.status == 'approved' %}badge-success{% elif payment_request.status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+            {{ payment_request.get_status_display }}
+        </span>
+    </div>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Tenant</div>
+            <div class="detail-value">
+                <a href="{% url 'tenant_detail' payment_request.tenant.pk %}" style="color: var(--primary); text-decoration: none;">
+                    {{ payment_request.tenant.full_name }}
+                </a>
+            </div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">House</div>
+            <div class="detail-value">{{ payment_request.tenant.house.house_number|default:"-" }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Rent Period</div>
+            <div class="detail-value">{{ payment_request.rent_charge.get_month_display }} {{ payment_request.rent_charge.year }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Amount</div>
+            <div class="detail-value">M {{ payment_request.amount }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Method</div>
+            <div class="detail-value">{{ payment_request.get_payment_method_display }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Reference</div>
+            <div class="detail-value">{{ payment_request.payment_reference|default:"-" }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Requested</div>
+            <div class="detail-value">{{ payment_request.created_at|date:"M d, Y H:i" }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

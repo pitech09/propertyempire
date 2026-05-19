@@ -131,9 +131,9 @@ def set_payment_amount(sender, instance, **kwargs):
 
 @receiver(pre_delete, sender=Payment)
 def adjust_tenant_balance_on_delete(sender, instance, **kwargs):
-    tenant = instance.tenant
-    if tenant:
-        tenant.balance += instance.amount_paid
+    # Tenant.balance is computed from rent charges and payments, so deleting a
+    # payment automatically changes the balance without mutating the tenant.
+    return
 
 
 @receiver([post_save, post_delete], sender=Tenant)

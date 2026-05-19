@@ -1,34 +1,54 @@
-from twilio.rest import Client
 from django.conf import settings
 from django.utils import timezone
 import logging
 import os
+import requests
 from twilio.http.http_client import TwilioHttpClient
+from twilio.rest import Client
 
 logger = logging.getLogger(__name__)
 
-proxy_client = TwilioHttpClient(
-    proxy={'http': os.environ.get('HTTP_PROXY'), 'https': os.environ.get('HTTP_PROXY')}
-)
-
-client = Client(
-    settings.TWILIO_ACCOUNT_SID,
-    settings.TWILIO_AUTH_TOKEN,
-    http_client=proxy_client
-)
-
 class TwilioNotificationService:
     def __init__(self):
-        self.client = Client(
-            settings.TWILIO_ACCOUNT_SID,
-            settings.TWILIO_AUTH_TOKEN
-        )
+        self.provider = getattr(settings, "SMS_PROVIDER", "twilio").lower()
+        self.client = None
         self.from_number = settings.TWILIO_PHONE_NUMBER
+        self.textbee_api_key = getattr(settings, "TEXTBEE_API_KEY", None)
+        self.textbee_device_id = getattr(settings, "TEXTBEE_DEVICE_ID", None)
+        self.textbee_base_url = getattr(settings, "TEXTBEE_BASE_URL", "https://api.textbee.dev/api/v1").rstrip("/")
+        self.textbee_sim_subscription_id = getattr(settings, "TEXTBEE_SIM_SUBSCRIPTION_ID", None)
     
     def send_sms(self, to_number, message):
-        """Send SMS via Twilio"""
+        """Send SMS through the configured provider."""
+        message = self._prepare_sms_message(message)
+        if self.provider == "textbee":
+            return self._send_textbee_sms(to_number, message)
+        return self._send_twilio_sms(to_number, message)
+
+    def _prepare_sms_message(self, message):
+        message = " ".join(str(message).split())
+        max_length = getattr(settings, "SMS_MAX_LENGTH", 160)
+        if max_length and len(message) > max_length:
+            logger.warning("SMS message trimmed from %s to %s characters", len(message), max_length)
+            return message[: max_length - 3].rstrip() + "..."
+        return message
+
+    def _get_twilio_client(self):
+        if self.client is None:
+            proxy_client = TwilioHttpClient(
+                proxy={'http': os.environ.get('HTTP_PROXY'), 'https': os.environ.get('HTTP_PROXY')}
+            )
+            self.client = Client(
+                settings.TWILIO_ACCOUNT_SID,
+                settings.TWILIO_AUTH_TOKEN,
+                http_client=proxy_client
+            )
+        return self.client
+
+    def _send_twilio_sms(self, to_number, message):
+        """Send SMS via Twilio."""
         try:
-            msg = self.client.messages.create(
+            msg = self._get_twilio_client().messages.create(
                 body=message,
                 from_=self.from_number,
                 to=str(to_number)
@@ -37,6 +57,72 @@ class TwilioNotificationService:
             return True, msg.sid
         except Exception as e:
             logger.error(f"Failed to send SMS to {to_number}: {str(e)}")
+            return False, str(e)
+
+    def _send_textbee_sms(self, to_number, message):
+        """Send SMS via TextBee."""
+        if not self.textbee_api_key:
+            return False, "Missing TEXTBEE_API_KEY"
+        if not self.textbee_device_id:
+            return False, "Missing TEXTBEE_DEVICE_ID"
+        if not to_number:
+            return False, "Missing SMS recipient"
+
+        url = f"{self.textbee_base_url}/gateway/devices/{self.textbee_device_id}/send-sms"
+        payload = {
+            "recipients": [str(to_number)],
+            "message": message,
+        }
+        if self.textbee_sim_subscription_id:
+            try:
+                payload["simSubscriptionId"] = int(self.textbee_sim_subscription_id)
+            except (TypeError, ValueError):
+                return False, "TEXTBEE_SIM_SUBSCRIPTION_ID must be a number"
+
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "x-api-key": self.textbee_api_key,
+                },
+                timeout=20,
+            )
+            response.raise_for_status()
+            try:
+                data = response.json()
+            except ValueError:
+                data = {"response": response.text}
+            message_id = data.get("id") or data.get("messageId") or data.get("batchId") or str(data)
+            logger.info(f"SMS sent successfully to {to_number} via TextBee. Result: {message_id}")
+            return True, message_id
+        except requests.RequestException as e:
+            detail = getattr(e.response, "text", "") if getattr(e, "response", None) is not None else str(e)
+            logger.error(f"Failed to send SMS to {to_number} via TextBee: {detail}")
+            return False, detail
+
+    def send_whatsapp(self, to_number, message):
+        """Send WhatsApp message via Twilio."""
+        if not to_number:
+            return False, "Missing WhatsApp recipient"
+        if not getattr(settings, "TWILIO_WHATSAPP_FROM", None):
+            return False, "Missing Twilio WhatsApp sender"
+
+        to_number = str(to_number)
+        if not to_number.startswith("whatsapp:"):
+            to_number = f"whatsapp:{to_number}"
+
+        try:
+            msg = self._get_twilio_client().messages.create(
+                body=message,
+                from_=settings.TWILIO_WHATSAPP_FROM,
+                to=to_number,
+            )
+            logger.info(f"WhatsApp sent successfully to {to_number}. SID: {msg.sid}")
+            return True, msg.sid
+        except Exception as e:
+            logger.error(f"Failed to send WhatsApp to {to_number}: {str(e)}")
             return False, str(e)
     
     def send_rent_due_reminder(self, rent_charge):
@@ -102,16 +188,13 @@ class TwilioNotificationService:
             urgency = f"in {days_until_due} days"
         
         message = (
-            f"Hi {tenant.full_name},\n\n"
-            f"Rent Reminder: Your rent of M {rent_charge.amount_due:,.2f} "
-            f"for {tenant.building_name} - House {tenant.house.house_number} "
-            f"is due {urgency} ({tenant.rent_due_date.strftime('%d %b %Y')}).\n\n"
+            f"Rent reminder: M{rent_charge.amount_due:,.2f} for "
+            f"{tenant.building_name} house {tenant.house.house_number} "
+            f"is due {urgency}."
         )
         
         if rent_charge.balance > 0:
-            message += f"Current balance: M {rent_charge.balance:,.2f}\n\n"
-        
-        message += "Thank you for your prompt payment!"
+            message += f" Balance: M{rent_charge.balance:,.2f}."
         
         return message
     
@@ -121,29 +204,23 @@ class TwilioNotificationService:
         rent_charge = payment.rent_charge
         
         message = (
-            f"Hi {tenant.full_name},\n\n"
-            f"Payment Received: M {payment.amount:,.2f} "
-            f"for {rent_charge.get_month_display()} {rent_charge.year} rent.\n\n"
-            f"Payment Method: {payment.get_payment_method_display()}\n"
-            f"Date: {payment.paid_at.strftime('%d %b %Y, %I:%M %p')}\n\n"
+            f"Payment received: M{payment.amount:,.2f} for "
+            f"{rent_charge.get_month_display()} {rent_charge.year} rent. "
         )
         
         if rent_charge.balance > 0:
-            message += f"Remaining balance: M {rent_charge.balance:,.2f}\n\n"
+            message += f"Balance: M{rent_charge.balance:,.2f}."
         else:
-            message += "Your rent is now fully paid. Thank you!\n\n"
+            message += "Rent fully paid. Thank you."
         
         return message
     
     def _generate_welcome_message(self, tenant):
         """Generate welcome message for new tenant"""
         message = (
-            f"Welcome {tenant.full_name}!\n\n"
-            f"You've been assigned to {tenant.building_name} - "
-            f"House {tenant.house.house_number}.\n\n"
-            f"Monthly Rent: M {tenant.rent:,.2f}\n"
-            f"Rent Due Date: {tenant.rent_due_date.strftime('%d of each month')}\n\n"
-            f"We're happy to have you!"
+            f"Welcome {tenant.full_name}. House {tenant.house.house_number}, "
+            f"{tenant.building_name}. Rent: M{tenant.rent:,.2f}, "
+            f"due every {tenant.rent_due_date.day}."
         )
         return message
     
@@ -153,13 +230,8 @@ class TwilioNotificationService:
         days_overdue = (timezone.now().date() - tenant.rent_due_date).days
         
         message = (
-            f"Hi {tenant.full_name},\n\n"
-            f"OVERDUE NOTICE: Your rent payment for "
-            f"{rent_charge.get_month_display()} {rent_charge.year} "
-            f"is {days_overdue} days overdue.\n\n"
-            f"Amount Due: M {rent_charge.balance:,.2f}\n"
-            f"Due Date: {tenant.rent_due_date.strftime('%d %b %Y')}\n\n"
-            f"Please make payment as soon as possible.\n"
-            f"Contact us if you need assistance."
+            f"Overdue rent: {rent_charge.get_month_display()} {rent_charge.year} "
+            f"is {days_overdue} days late. Amount due: M{rent_charge.balance:,.2f}. "
+            "Please pay as soon as possible."
         )
         return message

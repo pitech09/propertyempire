@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Requests - House Management{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    <span>/</span>
+    <span>Payment Requests</span>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">Payment <span>Requests</span></h1>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.5rem;">
+    <form method="get" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <label for="status" style="color: var(--text-muted); font-size: 0.9rem;">Filter by Status:</label>
+        <select name="status" id="status" class="form-control" style="max-width: 220px;">
+            <option value="">All Requests</option>
+            <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>Pending</option>
+            <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>Approved</option>
+            <option value="rejected" {% if request.GET.status == "rejected" %}selected{% endif %}>Rejected</option>
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Apply Filter</button>
+        {% if request.GET.status %}
+        <a href="{% url 'payment_request_list' %}" class="btn btn-secondary btn-sm" style="background: transparent; border-color: var(--text-muted);">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="card">
+    {% if payment_requests %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tenant</th>
+                    <th>House</th>
+                    <th>Rent Period</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Requested</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment_request in payment_requests %}
+                <tr>
+                    <td>
+                        <a href="{% url 'tenant_detail' payment_request.tenant.pk %}" style="color: var(--primary); text-decoration: none;">
+                            {{ payment_request.tenant.full_name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if payment_request.tenant.house %}
+                        <a href="{% url 'house_detail' payment_request.tenant.house.pk %}" style="color: var(--blue); text-decoration: none;">
+                            {{ payment_request.tenant.house.house_number }}
+                        </a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>{{ payment_request.rent_charge.get_month_display }} {{ payment_request.rent_charge.year }}</td>
+                    <td style="color: var(--success); font-weight: 600;">M {{ payment_request.amount }}</td>
+                    <td>{{ payment_request.get_payment_method_display }}</td>
+                    <td>
+                        <span class="badge {% if payment_request.status == 'approved' %}badge-success{% elif payment_request.status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                            {{ payment_request.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ payment_request.created_at|date:"M d, Y H:i" }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'payment_request_detail' payment_request.pk %}" class="btn-icon" title="View">V</a>
+                            <a href="{% url 'payment_request_edit' payment_request.pk %}" class="btn-icon" title="Update Status">S</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No payment requests</h3>
+        <p>Tenant payment requests will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.urls import path
 from tennants.views.tenants import initiate_payment, report_issue, tenant_dashboard,  health
 from tennants.views.web import (dashboard, BuildingListViewWeb, BuildingDetailViewWeb,
+                    landlord_financial_dashboard, owner_dashboard,
                     BuildingCreateViewWeb, BuildingUpdateViewWeb, BuildingDeleteViewWeb,
                     HouseListViewWeb, HouseDetailViewWeb,
                     HouseCreateViewWeb, HouseUpdateViewWeb, HouseDeleteViewWeb,
@@ -10,7 +11,10 @@ from tennants.views.web import (dashboard, BuildingListViewWeb, BuildingDetailVi
                     PaymentCreateViewWeb, PaymentUpdateViewWeb,
                     RentChargeListViewWeb, RentChargeDetailViewWeb,
                     RentChargeCreateViewWeb, RentChargeUpdateViewWeb,
-                    bulk_create_rent_charges,send_rent_reminders)
+                    bulk_create_rent_charges,send_rent_reminders,
+                    PaymentRequestListViewWeb, PaymentRequestDetailViewWeb,
+                    PaymentRequestCreateViewWeb, PaymentRequestUpdateViewWeb,
+                    IssueListViewWeb, IssueDetailViewWeb, IssueUpdateViewWeb)
 
 from tennants.views.api import (TenantListView, TenantDetailView,
                     HouseListView, HouseDetailView,
@@ -39,6 +43,8 @@ urlpatterns = [
     # ========================================
     path('', dashboard, name='dashboard'),
     path('health/', health, name='health_check'),
+    path('financials/', landlord_financial_dashboard, name='landlord_financial_dashboard'),
+    path('owner/dashboard/', owner_dashboard, name='owner_dashboard'),
     
     # Buildings
     path('buildings/', BuildingListViewWeb.as_view(), name='building_list'),
@@ -69,6 +75,12 @@ urlpatterns = [
     path('payments/<int:pk>/', PaymentListViewWeb.as_view(), name='payment_detail'),
     path('payments/<int:pk>/edit/', PaymentDetailViewWeb.as_view(), name='payment_edit'),
 
+    #paymentrequest
+    path('payment-requests/', PaymentRequestListViewWeb.as_view(), name='payment_request_list'),
+    path('payment-requests/add/', PaymentRequestCreateViewWeb.as_view(), name='payment_request_add'),
+    path('payment-requests/<int:pk>/', PaymentRequestDetailViewWeb.as_view(), name='payment_request_detail'),
+    path('payment-requests/<int:pk>/edit/', PaymentRequestUpdateViewWeb.as_view(), name='payment_request_edit'),
+
     # Rent Charges
     path('rent-charges/', RentChargeListViewWeb.as_view(), name='rent_charge_list'),
     path('rent-charges/add/', RentChargeCreateViewWeb.as_view(), name='rent_charge_add'),
@@ -79,6 +91,11 @@ urlpatterns = [
 
     # notifications
     path('send-rent-reminders/', send_rent_reminders, name='send_rent_reminders'),
+
+    # Issues
+    path('issues/', IssueListViewWeb.as_view(), name='issue_list'),
+    path('issues/<int:pk>/', IssueDetailViewWeb.as_view(), name='issue_detail'),
+    path('issues/<int:pk>/edit/', IssueUpdateViewWeb.as_view(), name='issue_edit'),
 ]
 
 

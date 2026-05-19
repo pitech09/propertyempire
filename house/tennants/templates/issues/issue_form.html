@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Update Maintenance Report - House Management{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    <span>/</span>
+    <a href="{% url 'issue_list' %}">Maintenance Reports</a>
+    <span>/</span>
+    <span>Update</span>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">Update <span>Maintenance Status</span></h1>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="detail-grid" style="margin-bottom: 1.5rem;">
+            <div class="detail-item">
+                <div class="detail-label">Issue</div>
+                <div class="detail-value">{{ object.title }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Tenant</div>
+                <div class="detail-value">{{ object.tenant.full_name }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Reported</div>
+                <div class="detail-value">{{ object.created_at|date:"M d, Y" }}</div>
+            </div>
+        </div>
+
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <div style="color: var(--danger); margin-top: 0.5rem;">{{ field.errors }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Status</button>
+            <a href="{% url 'issue_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

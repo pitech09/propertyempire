@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers, generics
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from tennants.models import Tenant, House, Payment, FlatBuilding, RentCharge, Issue
+from tennants.models import Tenant, House, Payment, FlatBuilding, RentCharge, Issue, PaymentRequest
 from tennants.serializers import (TenantSerializer, HouseSerializer, PaymentSerializer,
                           FlatBuildingSerializer, RegisterAdminSerializer, AdminLoginSerializer, ForgotPasswordSerializer)
 import logging
@@ -32,7 +32,7 @@ import json
 import logging
 from tennants.forms import RegistrationForm
 from django.shortcuts import render, redirect
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -42,13 +42,74 @@ from django.contrib import messages
 from django.shortcuts import render
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.db.models import Sum
+from django.http import HttpResponseForbidden
 from tennants.services.sms import TwilioNotificationService
 from tennants.services.tenant_accounts import create_tenant_login_user, send_tenant_credentials_sms
+from tennants.services.payment_requests import notify_tenant_issue_approved
+from decimal import Decimal
 
 
 
 
 logger = logging.getLogger(__name__)
+
+
+def _money(value):
+    return value or Decimal("0.00")
+
+
+def _landlord_financials(user):
+    payments = Payment.objects.filter(tenant__house__user=user)
+    charges = RentCharge.objects.filter(tenant__house__user=user).select_related("tenant", "tenant__house")
+    active_tenants = Tenant.objects.filter(house__user=user, is_active=True, house__isnull=False)
+
+    total_collected = _money(payments.aggregate(total=Sum("amount"))["total"])
+    total_billed = _money(charges.aggregate(total=Sum("amount_due"))["total"])
+    total_outstanding = sum((charge.balance for charge in charges), Decimal("0.00"))
+    expected_monthly_rent = sum((tenant.rent for tenant in active_tenants), Decimal("0.00"))
+    platform_fee = total_collected * settings.PLATFORM_TRANSACTION_FEE_RATE
+
+    return {
+        "total_collected": total_collected,
+        "total_billed": total_billed,
+        "total_outstanding": total_outstanding,
+        "expected_monthly_rent": expected_monthly_rent,
+        "platform_fee": platform_fee,
+        "net_after_fees": total_collected - platform_fee,
+        "payment_count": payments.count(),
+        "tenant_count": active_tenants.count(),
+        "pending_payment_requests": PaymentRequest.objects.filter(
+            tenant__house__user=user,
+            status="pending",
+        ).count(),
+    }
+
+
+def _landlord_building_financials(user):
+    rows = []
+    buildings = FlatBuilding.objects.filter(user=user).prefetch_related("houses")
+
+    for building in buildings:
+        payments = Payment.objects.filter(tenant__house__flat_building=building)
+        charges = RentCharge.objects.filter(tenant__house__flat_building=building).select_related("tenant")
+        active_tenants = Tenant.objects.filter(house__flat_building=building, is_active=True)
+        collected = _money(payments.aggregate(total=Sum("amount"))["total"])
+        billed = _money(charges.aggregate(total=Sum("amount_due"))["total"])
+        outstanding = sum((charge.balance for charge in charges), Decimal("0.00"))
+        expected_rent = sum((tenant.rent for tenant in active_tenants), Decimal("0.00"))
+
+        rows.append({
+            "building": building,
+            "collected": collected,
+            "billed": billed,
+            "outstanding": outstanding,
+            "expected_rent": expected_rent,
+            "active_tenants": active_tenants.count(),
+            "occupancy": building.how_many_occupied,
+        })
+
+    return rows
 
 
 # this views are for returning html pages
@@ -101,6 +162,18 @@ def dashboard(request):
         "tenant__house__flat_building",
     ).order_by("-created_at")[:5]
 
+    recent_payment_requests = PaymentRequest.objects.filter(
+        tenant__house__user=request.user
+    ).select_related(
+        "tenant",
+        "tenant__house",
+        "rent_charge",
+    ).order_by("-created_at")[:5]
+    pending_payment_requests = PaymentRequest.objects.filter(
+        tenant__house__user=request.user,
+        status="pending",
+    ).count()
+
     pending_issues = Issue.objects.filter(
         tenant__house__user=request.user,
         status="pending",
@@ -129,12 +202,120 @@ def dashboard(request):
         'recent_payments': recent_payments,
         'unpaid_charges': unpaid_charges,
         'recent_issues': recent_issues,
+        'recent_payment_requests': recent_payment_requests,
         'pending_issues': pending_issues,
         'in_progress_issues': in_progress_issues,
         'resolved_issues': resolved_issues,
+        'pending_payment_requests': pending_payment_requests,
         'percent_occupied': percent_occupied,
     }
     return render(request, 'dashboard.html', context)
+
+
+@login_required
+def landlord_financial_dashboard(request):
+    if Tenant.objects.filter(user=request.user).exists():
+        return HttpResponseForbidden()
+
+    financials = _landlord_financials(request.user)
+    recent_payments = Payment.objects.filter(
+        tenant__house__user=request.user
+    ).select_related("tenant", "tenant__house", "rent_charge").order_by("-paid_at")[:10]
+    unpaid_charges = [
+        charge for charge in RentCharge.objects.filter(
+            tenant__house__user=request.user
+        ).select_related("tenant", "tenant__house").order_by("-year", "-month")
+        if charge.balance > 0
+    ][:10]
+
+    context = {
+        **financials,
+        "transaction_fee_rate": settings.PLATFORM_TRANSACTION_FEE_RATE,
+        "monthly_subscription": settings.LANDLORD_MONTHLY_SUBSCRIPTION,
+        "building_financials": _landlord_building_financials(request.user),
+        "recent_payments": recent_payments,
+        "unpaid_charges": unpaid_charges,
+    }
+    return render(request, "financials/landlord_dashboard.html", context)
+
+
+@login_required
+def owner_dashboard(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        return HttpResponseForbidden()
+
+    landlords = User.objects.filter(
+        is_staff=False,
+        is_superuser=False,
+        tenant__isnull=True,
+    ).distinct().order_by("username")
+    landlord_rows = []
+    platform_transaction_revenue = Decimal("0.00")
+    total_collected = Decimal("0.00")
+    total_outstanding = Decimal("0.00")
+
+    for landlord in landlords:
+        financials = _landlord_financials(landlord)
+        platform_transaction_revenue += financials["platform_fee"]
+        total_collected += financials["total_collected"]
+        total_outstanding += financials["total_outstanding"]
+        landlord_rows.append({
+            "landlord": landlord,
+            **financials,
+            "buildings": FlatBuilding.objects.filter(user=landlord).count(),
+            "houses": House.objects.filter(user=landlord).count(),
+            "occupied_houses": House.objects.filter(user=landlord, occupation=True).count(),
+            "payment_requests": PaymentRequest.objects.filter(tenant__house__user=landlord).count(),
+            "maintenance_reports": Issue.objects.filter(tenant__house__user=landlord).count(),
+        })
+
+    subscription_revenue = landlords.count() * settings.LANDLORD_MONTHLY_SUBSCRIPTION
+    total_houses = House.objects.count()
+    occupied_houses = House.objects.filter(occupation=True).count()
+    occupancy_rate = round((occupied_houses / total_houses) * 100, 2) if total_houses else 0
+
+    context = {
+        "landlord_rows": landlord_rows,
+        "landlord_count": landlords.count(),
+        "building_count": FlatBuilding.objects.count(),
+        "house_count": total_houses,
+        "occupied_houses": occupied_houses,
+        "vacant_houses": total_houses - occupied_houses,
+        "tenant_count": Tenant.objects.count(),
+        "active_tenant_count": Tenant.objects.filter(is_active=True).count(),
+        "occupancy_rate": occupancy_rate,
+        "payment_count": Payment.objects.count(),
+        "payment_request_count": PaymentRequest.objects.count(),
+        "pending_payment_request_count": PaymentRequest.objects.filter(status="pending").count(),
+        "maintenance_report_count": Issue.objects.count(),
+        "pending_maintenance_count": Issue.objects.filter(status="pending").count(),
+        "approved_maintenance_count": Issue.objects.filter(status="approved").count(),
+        "total_collected": total_collected,
+        "total_outstanding": total_outstanding,
+        "platform_transaction_revenue": platform_transaction_revenue,
+        "subscription_revenue": subscription_revenue,
+        "total_platform_revenue": platform_transaction_revenue + subscription_revenue,
+        "transaction_fee_rate": settings.PLATFORM_TRANSACTION_FEE_RATE,
+        "monthly_subscription": settings.LANDLORD_MONTHLY_SUBSCRIPTION,
+        "recent_payments": Payment.objects.select_related(
+            "tenant",
+            "tenant__house",
+            "tenant__house__user",
+            "rent_charge",
+        ).order_by("-paid_at")[:10],
+        "recent_payment_requests": PaymentRequest.objects.select_related(
+            "tenant",
+            "tenant__house",
+            "tenant__house__user",
+            "rent_charge",
+        ).order_by("-created_at")[:10],
+        "recent_issues": Issue.objects.select_related(
+            "tenant",
+            "tenant__house",
+            "tenant__house__user",
+        ).order_by("-created_at")[:10],
+    }
+    return render(request, "financials/owner_dashboard.html", context)
 
 
 # ============================================================================
@@ -412,6 +593,152 @@ class TenantDetailViewWeb(LoginRequiredMixin, DetailView):
         return context
 
 
+class PaymentDeleteViewWeb(LoginRequiredMixin, DeleteView):
+    model = PaymentRequest
+    template_name = 'payments/payment_confirm_delete.html'
+    success_url = reverse_lazy('payment_list')
+    
+    def get_queryset(self):
+        return PaymentRequest.objects.filter(tenant__house__user=self.request.user)
+
+
+class PaymentRequestListViewWeb(LoginRequiredMixin, ListView):
+    model = PaymentRequest
+    template_name = "payments/payment_request_list.html"
+    context_object_name = "payment_requests"
+
+    def get_queryset(self):
+        queryset = PaymentRequest.objects.filter(
+            tenant__house__user=self.request.user
+        ).select_related("tenant", "tenant__house", "rent_charge")
+
+        status_filter = self.request.GET.get("status")
+        if status_filter in dict(PaymentRequest.STATUS_CHOICES):
+            queryset = queryset.filter(status=status_filter)
+
+        return queryset.order_by("-created_at")
+
+
+class PaymentRequestDetailViewWeb(LoginRequiredMixin, DetailView):
+    model = PaymentRequest
+    template_name = "payments/payment_request_detail.html"
+    context_object_name = "payment_request"
+
+    def get_queryset(self):
+        return PaymentRequest.objects.filter(
+            tenant__house__user=self.request.user
+        ).select_related("tenant", "tenant__house", "rent_charge")
+
+
+class PaymentRequestCreateViewWeb(LoginRequiredMixin, CreateView):
+    model = PaymentRequest
+    fields = ["tenant", "rent_charge", "amount", "payment_method", "payment_reference", "status"]
+    template_name = "payments/payment_request_form.html"
+    success_url = reverse_lazy("payment_request_list")
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields["tenant"].queryset = Tenant.objects.filter(house__user=self.request.user)
+        form.fields["rent_charge"].queryset = RentCharge.objects.filter(
+            tenant__house__user=self.request.user
+        )
+        for field in form.fields.values():
+            field.widget.attrs.setdefault("class", "form-control")
+        return form
+
+    def form_valid(self, form):
+        messages.success(self.request, "Payment request created successfully!")
+        return super().form_valid(form)
+
+
+class PaymentRequestUpdateViewWeb(LoginRequiredMixin, UpdateView):
+    model = PaymentRequest
+    fields = ["status"]
+    template_name = "payments/payment_request_form.html"
+    success_url = reverse_lazy("payment_request_list")
+
+    def get_queryset(self):
+        return PaymentRequest.objects.filter(
+            tenant__house__user=self.request.user
+        ).select_related("tenant", "rent_charge")
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        for field in form.fields.values():
+            field.widget.attrs.setdefault("class", "form-control")
+        return form
+
+    def form_valid(self, form):
+        old_status = PaymentRequest.objects.get(pk=form.instance.pk).status
+        response = super().form_valid(form)
+
+        if self.object.status == "approved" and old_status != "approved":
+            Payment.objects.get_or_create(
+                user=self.request.user,
+                tenant=self.object.tenant,
+                rent_charge=self.object.rent_charge,
+                amount=self.object.amount,
+                payment_method=self.object.payment_method,
+                payment_reference=self.object.payment_reference,
+            )
+
+        messages.success(self.request, "Payment request status updated successfully!")
+        return response
+
+
+class IssueListViewWeb(LoginRequiredMixin, ListView):
+    model = Issue
+    template_name = "issues/issue_list.html"
+    context_object_name = "issues"
+
+    def get_queryset(self):
+        queryset = Issue.objects.filter(
+            tenant__house__user=self.request.user
+        ).select_related("tenant", "tenant__house", "tenant__house__flat_building")
+
+        status_filter = self.request.GET.get("status")
+        if status_filter in dict(Issue.STATUS_CHOICES):
+            queryset = queryset.filter(status=status_filter)
+
+        return queryset.order_by("-created_at")
+
+
+class IssueDetailViewWeb(LoginRequiredMixin, DetailView):
+    model = Issue
+    template_name = "issues/issue_detail.html"
+    context_object_name = "issue"
+
+    def get_queryset(self):
+        return Issue.objects.filter(
+            tenant__house__user=self.request.user
+        ).select_related("tenant", "tenant__house", "tenant__house__flat_building")
+
+
+class IssueUpdateViewWeb(LoginRequiredMixin, UpdateView):
+    model = Issue
+    fields = ["status"]
+    template_name = "issues/issue_form.html"
+    success_url = reverse_lazy("issue_list")
+
+    def get_queryset(self):
+        return Issue.objects.filter(tenant__house__user=self.request.user)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        for field in form.fields.values():
+            field.widget.attrs.setdefault("class", "form-control")
+        return form
+
+    def form_valid(self, form):
+        old_status = Issue.objects.get(pk=form.instance.pk).status
+        response = super().form_valid(form)
+
+        if old_status == "pending" and self.object.status == "approved":
+            transaction.on_commit(lambda: notify_tenant_issue_approved(self.object))
+
+        messages.success(self.request, "Maintenance report status updated successfully!")
+        return response
+
 # ============================================================================
 # PAYMENT VIEWS
 # ============================================================================
@@ -491,13 +818,20 @@ class RentChargeCreateViewWeb(LoginRequiredMixin, CreateView):
     fields = ['tenant', 'year', 'month', 'amount_due']
     template_name = 'rentcharges/rentcharge_form.html'
     success_url = reverse_lazy('rent_charge_list')
-    
+
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # Only show user's tenants
-        form.fields['tenant'].queryset = Tenant.objects.filter(house__user=self.request.user)
+        form.fields['tenant'].queryset = Tenant.objects.filter(
+            house__user=self.request.user
+        )
         return form
-    
+
+    def form_valid(self, form):
+        try:
+            return super().form_valid(form)
+        except IntegrityError:
+            form.add_error(None, "Rent charge already exists for this tenant/month/year.")
+            return self.form_invalid(form)
  
 
 class RentChargeDetailViewWeb(LoginRequiredMixin, DetailView):

@@ -87,7 +87,7 @@ class AdminLogoutView(APIView):
 
 def get_login_redirect_url(user):
     if user.is_superuser or user.is_staff:
-        return "/admin/"
+        return "/api/owner/dashboard/"
 
     if Tenant.objects.filter(user=user).exists():
         return "/tenant/dashboard/"
@@ -153,5 +153,4 @@ def register(request):
         form = RegistrationForm()
     
     return render(request, "register.html", {"form": form})
-
 

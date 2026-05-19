@@ -82,6 +82,12 @@
         <div class="stat-value">{{ resolved_issues }}</div>
         <div class="stat-label">Resolved Issues</div>
     </div>
+    <div class="stat-card">
+        <div class="stat-value" style="{% if pending_payment_requests %}color: var(--primary); background: none; -webkit-text-fill-color: var(--primary);{% endif %}">
+            {{ pending_payment_requests }}
+        </div>
+        <div class="stat-label">Payment Requests</div>
+    </div>
 </div>
 
 <!-- Quick Actions -->
@@ -90,11 +96,14 @@
         <h2 class="card-title">Quick Actions</h2>
     </div>
     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="{% url 'landlord_financial_dashboard' %}" class="btn btn-primary"> Financial Dashboard</a>
         <a href="{% url 'building_add' %}" class="btn btn-primary"> Add Building</a>
         <a href="{% url 'house_add' %}" class="btn btn-secondary"> Add House</a>
         <a href="{% url 'tenant_add' %}" class="btn btn-secondary"> Add Tenant</a>
         <a href="{% url 'rent_charge_bulk_create' %}" class="btn btn-secondary" style="border-color: var(--primary); color: var(--primary);"> Bulk Create Charges</a>
         <a href="{% url 'payment_add' %}" class="btn btn-secondary"> Record Payment</a>
+        <a href="{% url 'payment_request_list' %}" class="btn btn-secondary"> Payment Requests</a>
+        <a href="{% url 'issue_list' %}" class="btn btn-secondary"> Maintenance Reports</a>
         <a href="{% url 'send_rent_reminders' %}" class="btn btn-secondary" style="border-color: var(--blue); color: var(--blue);"> Send Reminders</a>
     </div>
 </div>
@@ -151,7 +160,7 @@
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">Maintenance Reports</h2>
-        <span class="badge badge-info">{{ recent_issues|length }} recent</span>
+        <a href="{% url 'issue_list' %}" class="btn btn-secondary btn-sm">View All</a>
     </div>
 
     {% if recent_issues %}
@@ -186,15 +195,16 @@
                         {% endif %}
                     </td>
                     <td>
-                        <span class="badge {% if issue.status == 'resolved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% else %}badge-warning{% endif %}">
+                        <span class="badge {% if issue.status == 'resolved' or issue.status == 'approved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% else %}badge-warning{% endif %}">
                             {{ issue.get_status_display }}
                         </span>
                     </td>
                     <td>{{ issue.created_at|date:"M d, Y" }}</td>
                     <td>
-                        {% if issue.tenant.house %}
-                        <a href="{% url 'house_detail' issue.tenant.house.pk %}" class="btn-icon" title="View House">👁</a>
-                        {% endif %}
+                        <div class="action-buttons">
+                            <a href="{% url 'issue_detail' issue.pk %}" class="btn-icon" title="View">V</a>
+                            <a href="{% url 'issue_edit' issue.pk %}" class="btn-icon" title="Update Status">S</a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -205,6 +215,59 @@
     <div class="empty-state">
         <h3>No maintenance reports</h3>
         <p>Issues reported by tenants will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Payment Requests -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Tenant Payment Requests</h2>
+        <a href="{% url 'payment_request_list' %}" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+
+    {% if recent_payment_requests %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tenant</th>
+                    <th>Amount</th>
+                    <th>Rent Period</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Requested</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment_request in recent_payment_requests %}
+                <tr>
+                    <td style="color: var(--text-primary); font-weight: 500;">{{ payment_request.tenant.full_name }}</td>
+                    <td style="color: var(--success);">M {{ payment_request.amount }}</td>
+                    <td>{{ payment_request.rent_charge.get_month_display }} {{ payment_request.rent_charge.year }}</td>
+                    <td>{{ payment_request.get_payment_method_display }}</td>
+                    <td>
+                        <span class="badge {% if payment_request.status == 'approved' %}badge-success{% elif payment_request.status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                            {{ payment_request.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ payment_request.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'payment_request_detail' payment_request.pk %}" class="btn-icon" title="View">V</a>
+                            <a href="{% url 'payment_request_edit' payment_request.pk %}" class="btn-icon" title="Update Status">S</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No payment requests</h3>
+        <p>Tenant payment requests will appear here.</p>
     </div>
     {% endif %}
 </div>

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from decimal import Decimal
 import os
 from socket import socket
 from dotenv import load_dotenv
@@ -36,6 +37,29 @@ REDIS_HOST = os.getenv("REDIS_URL")
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
+TWILIO_WHATSAPP_FROM = os.getenv(
+    "TWILIO_WHATSAPP_FROM",
+    f"whatsapp:{TWILIO_PHONE_NUMBER}" if TWILIO_PHONE_NUMBER else None,
+)
+LANDLORD_WHATSAPP_NUMBER = os.getenv("LANDLORD_WHATSAPP_NUMBER")
+LANDLORD_SMS_NUMBER = os.getenv("LANDLORD_SMS_NUMBER")
+SMS_PROVIDER = os.getenv("SMS_PROVIDER", "textbee")
+SMS_MAX_LENGTH = int(os.getenv("SMS_MAX_LENGTH", "160"))
+TEXTBEE_API_KEY = os.getenv("TEXTBEE_API_KEY")
+TEXTBEE_DEVICE_ID = os.getenv("TEXTBEE_DEVICE_ID")
+TEXTBEE_BASE_URL = os.getenv("TEXTBEE_BASE_URL", "https://api.textbee.dev/api/v1")
+TEXTBEE_SIM_SUBSCRIPTION_ID = os.getenv("TEXTBEE_SIM_SUBSCRIPTION_ID")
+
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "False") == "True"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@propertyempire.local")
+
+PLATFORM_TRANSACTION_FEE_RATE = Decimal(os.getenv("PLATFORM_TRANSACTION_FEE_RATE", "0.01"))
+LANDLORD_MONTHLY_SUBSCRIPTION = Decimal(os.getenv("LANDLORD_MONTHLY_SUBSCRIPTION", "200.00"))
 
 CSRF_TRUSTED_ORIGINS = [
     "https://propertyempire.onrender.com",
@@ -231,7 +255,14 @@ WSGI_APPLICATION = "house.wsgi.application"
 
 # # # db for sqlite3
 import os
-
+#for dev mode
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / "db.sqlite3",
+    }
+}
+'''
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -245,7 +276,7 @@ DATABASES = {
         },
     }
 }
-
+'''
 
 
 # Password validation

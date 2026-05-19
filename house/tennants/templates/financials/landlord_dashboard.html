@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Dashboard - PropertyEmpire{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    <span>/</span>
+    <span>Financials</span>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">Financial <span>Dashboard</span></h1>
+    <a href="{% url 'payment_list' %}" class="btn btn-secondary">Payments</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">M {{ total_collected|floatformat:2 }}</div>
+        <div class="stat-label">Rent Collected</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ total_outstanding|floatformat:2 }}</div>
+        <div class="stat-label">Outstanding Rent</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ expected_monthly_rent|floatformat:2 }}</div>
+        <div class="stat-label">Expected Monthly Rent</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ net_after_fees|floatformat:2 }}</div>
+        <div class="stat-label">Net After App Fee</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ platform_fee|floatformat:2 }}</div>
+        <div class="stat-label">App Transaction Fees</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ pending_payment_requests }}</div>
+        <div class="stat-label">Pending Requests</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Platform Costs</h2>
+    </div>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Transaction Fee Rate</div>
+            <div class="detail-value">{{ transaction_fee_rate|floatformat:2 }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Monthly Subscription</div>
+            <div class="detail-value">M {{ monthly_subscription|floatformat:2 }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Building Performance</h2>
+    </div>
+    {% if building_financials %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Building</th>
+                    <th>Active Tenants</th>
+                    <th>Occupied</th>
+                    <th>Expected Rent</th>
+                    <th>Billed</th>
+                    <th>Collected</th>
+                    <th>Outstanding</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in building_financials %}
+                <tr>
+                    <td>
+                        <a href="{% url 'building_detail' row.building.pk %}" style="color: var(--primary); text-decoration: none;">
+                            {{ row.building.building_name }}
+                        </a>
+                    </td>
+                    <td>{{ row.active_tenants }}</td>
+                    <td>{{ row.occupancy }}</td>
+                    <td>M {{ row.expected_rent|floatformat:2 }}</td>
+                    <td>M {{ row.billed|floatformat:2 }}</td>
+                    <td style="color: var(--success);">M {{ row.collected|floatformat:2 }}</td>
+                    <td style="color: {% if row.outstanding > 0 %}var(--danger){% else %}var(--success){% endif %};">M {{ row.outstanding|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No buildings yet</h3>
+        <p>Add buildings and tenants to see property financials.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Payments</h2>
+        <a href="{% url 'payment_list' %}" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    {% if recent_payments %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tenant</th>
+                    <th>House</th>
+                    <th>Period</th>
+                    <th>Amount</th>
+                    <th>Paid At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in recent_payments %}
+                <tr>
+                    <td>{{ payment.tenant.full_name }}</td>
+                    <td>{{ payment.tenant.house.house_number|default:"-" }}</td>
+                    <td>{{ payment.rent_charge.get_month_display }} {{ payment.rent_charge.year }}</td>
+                    <td style="color: var(--success);">M {{ payment.amount|floatformat:2 }}</td>
+                    <td>{{ payment.paid_at|date:"M d, Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No payments yet</h3>
+        <p>Recorded payments will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Outstanding Rent</h2>
+        <a href="{% url 'rent_charge_list' %}" class="btn btn-secondary btn-sm">View Charges</a>
+    </div>
+    {% if unpaid_charges %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tenant</th>
+                    <th>House</th>
+                    <th>Period</th>
+                    <th>Amount Due</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for charge in unpaid_charges %}
+                <tr>
+                    <td>{{ charge.tenant.full_name }}</td>
+                    <td>{{ charge.tenant.house.house_number|default:"-" }}</td>
+                    <td>{{ charge.get_month_display }} {{ charge.year }}</td>
+                    <td>M {{ charge.amount_due|floatformat:2 }}</td>
+                    <td style="color: var(--danger);">M {{ charge.balance|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No outstanding rent</h3>
+        <p>All recorded rent charges are settled.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

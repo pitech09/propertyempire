@@ -48,13 +48,10 @@ def send_tenant_credentials_sms(tenant, password, login_url=None):
     if not tenant.sms_notifications:
         return False, "Notifications disabled"
 
-    login_line = f"\nLogin: {login_url}" if login_url else ""
+    login_line = f" Login: {login_url}" if login_url else ""
     message = (
-        f"Hi {tenant.full_name}, your PropertyEmpire tenant account is ready.\n\n"
-        f"Username: {tenant.user.username}\n"
-        f"Password: {password}"
-        f"{login_line}\n\n"
-        "Please sign in and change your password after your first login."
+        f"PropertyEmpire login. User: {tenant.user.username}. "
+        f"Pass: {password}.{login_line} Change password after login."
     )
 
     return TwilioNotificationService().send_sms(tenant.phone, message)

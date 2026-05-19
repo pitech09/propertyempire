@@ -449,6 +449,35 @@ def admin_login(request):
     
     return Response({"error": "Admin credentials required"}, status=401)
 
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def forgot_password(request):
+    """Endpoint to handle forgot password requests - just a placeholder for now"""
+    email = request.data.get('email')
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+    # In a real implementation, you'd look up the user by email and send a reset link
+    return Response({"message": f"If an account with {email} exists, a reset link has been sent."})
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def paymentrequests(request):
+    """Temporary endpoint to list all payment requests - REMOVE IN PRODUCTION"""
+    from tennants.models import PaymentRequest
+    requests = PaymentRequest.objects.all()
+    data = [
+        {
+            "tenant": pr.tenant.full_name,
+            "amount": pr.amount,
+            "payment_method": pr.payment_method,
+            "status": pr.status,
+            "created_at": pr.created_at,
+        }
+        for pr in requests
+    ]
+    return Response(data)
+
 @api_view(['POST'])
 @permission_classes([AllowAny])  # Remove for production!
 def create_test_tenant(request):

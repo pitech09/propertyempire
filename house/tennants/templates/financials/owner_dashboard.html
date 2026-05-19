@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Owner Dashboard - PropertyEmpire{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Owner <span>Dashboard</span></h1>
+    <a href="{% url 'admin:index' %}" class="btn btn-secondary">Django Admin</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ landlord_count }}</div>
+        <div class="stat-label">Registered Landlords</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ total_platform_revenue|floatformat:2 }}</div>
+        <div class="stat-label">Platform Revenue</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ platform_transaction_revenue|floatformat:2 }}</div>
+        <div class="stat-label">Transaction Fees</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ subscription_revenue|floatformat:2 }}</div>
+        <div class="stat-label">Monthly Subscriptions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ total_collected|floatformat:2 }}</div>
+        <div class="stat-label">Landlord Rent Collected</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">M {{ total_outstanding|floatformat:2 }}</div>
+        <div class="stat-label">Outstanding Rent</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ building_count }}</div>
+        <div class="stat-label">Buildings</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ house_count }}</div>
+        <div class="stat-label">Houses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ active_tenant_count }}</div>
+        <div class="stat-label">Active Tenants</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ occupancy_rate }}%</div>
+        <div class="stat-label">Occupancy Rate</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ pending_payment_request_count }}</div>
+        <div class="stat-label">Pending Payment Requests</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ pending_maintenance_count }}</div>
+        <div class="stat-label">Pending Maintenance</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Revenue Settings</h2>
+    </div>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Transaction Fee Rate</div>
+            <div class="detail-value">{{ transaction_fee_rate|floatformat:2 }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Monthly Subscription Per Landlord</div>
+            <div class="detail-value">M {{ monthly_subscription|floatformat:2 }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Landlord Performance</h2>
+    </div>
+    {% if landlord_rows %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Landlord</th>
+                    <th>Email</th>
+                    <th>Buildings</th>
+                    <th>Houses</th>
+                    <th>Tenants</th>
+                    <th>Collected</th>
+                    <th>Outstanding</th>
+                    <th>App Fee</th>
+                    <th>Expected Monthly Rent</th>
+                    <th>Payment Requests</th>
+                    <th>Maintenance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in landlord_rows %}
+                <tr>
+                    <td style="color: var(--text); font-weight: 600;">{{ row.landlord.username }}</td>
+                    <td>{{ row.landlord.email|default:"-" }}</td>
+                    <td>{{ row.buildings }}</td>
+                    <td>{{ row.occupied_houses }}/{{ row.houses }}</td>
+                    <td>{{ row.tenant_count }}</td>
+                    <td style="color: var(--success);">M {{ row.total_collected|floatformat:2 }}</td>
+                    <td style="color: {% if row.total_outstanding > 0 %}var(--danger){% else %}var(--success){% endif %};">M {{ row.total_outstanding|floatformat:2 }}</td>
+                    <td>M {{ row.platform_fee|floatformat:2 }}</td>
+                    <td>M {{ row.expected_monthly_rent|floatformat:2 }}</td>
+                    <td>{{ row.payment_requests }}</td>
+                    <td>{{ row.maintenance_reports }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No landlords with properties yet</h3>
+        <p>Landlord performance appears after users create properties.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Transactions</h2>
+    </div>
+    {% if recent_payments %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Landlord</th>
+                    <th>Tenant</th>
+                    <th>House</th>
+                    <th>Period</th>
+                    <th>Amount</th>
+                    <th>Paid At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in recent_payments %}
+                <tr>
+                    <td>{{ payment.tenant.house.user.username|default:"-" }}</td>
+                    <td>{{ payment.tenant.full_name }}</td>
+                    <td>{{ payment.tenant.house.house_number|default:"-" }}</td>
+                    <td>{{ payment.rent_charge.get_month_display }} {{ payment.rent_charge.year }}</td>
+                    <td style="color: var(--success);">M {{ payment.amount|floatformat:2 }}</td>
+                    <td>{{ payment.paid_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No transactions yet</h3>
+        <p>Payments made through the app will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Payment Requests</h2>
+    </div>
+    {% if recent_payment_requests %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Landlord</th>
+                    <th>Tenant</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Requested</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment_request in recent_payment_requests %}
+                <tr>
+                    <td>{{ payment_request.tenant.house.user.username|default:"-" }}</td>
+                    <td>{{ payment_request.tenant.full_name }}</td>
+                    <td>M {{ payment_request.amount|floatformat:2 }}</td>
+                    <td>{{ payment_request.get_payment_method_display }}</td>
+                    <td>
+                        <span class="badge {% if payment_request.status == 'approved' %}badge-success{% elif payment_request.status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                            {{ payment_request.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ payment_request.created_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No payment requests yet</h3>
+        <p>Tenant payment requests will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Maintenance Reports</h2>
+    </div>
+    {% if recent_issues %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Landlord</th>
+                    <th>Tenant</th>
+                    <th>Issue</th>
+                    <th>House</th>
+                    <th>Status</th>
+                    <th>Reported</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in recent_issues %}
+                <tr>
+                    <td>{{ issue.tenant.house.user.username|default:"-" }}</td>
+                    <td>{{ issue.tenant.full_name }}</td>
+                    <td>{{ issue.title }}</td>
+                    <td>{{ issue.tenant.house.house_number|default:"-" }}</td>
+                    <td>
+                        <span class="badge {% if issue.status == 'resolved' or issue.status == 'approved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ issue.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ issue.created_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No maintenance reports yet</h3>
+        <p>Maintenance activity across the platform will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

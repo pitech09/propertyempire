@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance Reports - House Management{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    <span>/</span>
+    <span>Maintenance Reports</span>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">Maintenance <span>Reports</span></h1>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.5rem;">
+    <form method="get" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <label for="status" style="color: var(--text-muted); font-size: 0.9rem;">Filter by Status:</label>
+        <select name="status" id="status" class="form-control" style="max-width: 220px;">
+            <option value="">All Reports</option>
+            <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>Pending</option>
+            <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>Approved</option>
+            <option value="in_progress" {% if request.GET.status == "in_progress" %}selected{% endif %}>In Progress</option>
+            <option value="resolved" {% if request.GET.status == "resolved" %}selected{% endif %}>Resolved</option>
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Apply Filter</button>
+        {% if request.GET.status %}
+        <a href="{% url 'issue_list' %}" class="btn btn-secondary btn-sm" style="background: transparent; border-color: var(--text-muted);">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="card">
+    {% if issues %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Tenant</th>
+                    <th>House</th>
+                    <th>Status</th>
+                    <th>Reported</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in issues %}
+                <tr>
+                    <td style="color: var(--text); font-weight: 600;">{{ issue.title }}</td>
+                    <td>
+                        <a href="{% url 'tenant_detail' issue.tenant.pk %}" style="color: var(--primary); text-decoration: none;">
+                            {{ issue.tenant.full_name }}
+                        </a>
+                    </td>
+                    <td>{{ issue.tenant.house.house_number|default:"-" }}</td>
+                    <td>
+                        <span class="badge {% if issue.status == 'resolved' or issue.status == 'approved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ issue.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ issue.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'issue_detail' issue.pk %}" class="btn-icon" title="View">V</a>
+                            <a href="{% url 'issue_edit' issue.pk %}" class="btn-icon" title="Update Status">S</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No maintenance reports</h3>
+        <p>Issues reported by tenants will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

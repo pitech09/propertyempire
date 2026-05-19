@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance Report - House Management{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    <span>/</span>
+    <a href="{% url 'issue_list' %}">Maintenance Reports</a>
+    <span>/</span>
+    <span>{{ issue.title }}</span>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">Maintenance <span>Report</span></h1>
+    <a href="{% url 'issue_edit' issue.pk %}" class="btn btn-primary">Update Status</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">{{ issue.title }}</h2>
+        <span class="badge {% if issue.status == 'resolved' or issue.status == 'approved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% else %}badge-warning{% endif %}">
+            {{ issue.get_status_display }}
+        </span>
+    </div>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Tenant</div>
+            <div class="detail-value">
+                <a href="{% url 'tenant_detail' issue.tenant.pk %}" style="color: var(--primary); text-decoration: none;">
+                    {{ issue.tenant.full_name }}
+                </a>
+            </div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">House</div>
+            <div class="detail-value">{{ issue.tenant.house.house_number|default:"-" }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Building</div>
+            <div class="detail-value">{{ issue.tenant.building_name|default:"-" }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Reported</div>
+            <div class="detail-value">{{ issue.created_at|date:"M d, Y H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Description</h2>
+    </div>
+    <p style="color: var(--text-secondary); white-space: pre-wrap;">{{ issue.description }}</p>
+</div>
+{% endblock %}

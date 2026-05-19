@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.http import JsonResponse
+from django.db import transaction
 
 from tennants.models import Tenant, Payment, RentCharge, Issue
 
@@ -14,6 +15,10 @@ def health(request):
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from tennants.models import PaymentRequest
+from tennants.services.payment_requests import (
+    notify_landlord_issue_report,
+    notify_landlord_payment_request,
+)
 
 @login_required
 def tenant_dashboard(request):
@@ -38,6 +43,7 @@ def tenant_dashboard(request):
 
     return render(request, "tenantviews/dashboard.html", context)
 
+
 @login_required
 def initiate_payment(request, charge_id):
     tenant = Tenant.objects.filter(user=request.user).first()
@@ -59,7 +65,7 @@ def initiate_payment(request, charge_id):
             messages.error(request, "Reference is required for non-cash payments.")
             return redirect("initiate_payment", charge_id=charge.id)
         
-        PaymentRequest.objects.create(
+        payment_request = PaymentRequest.objects.create(
             tenant=tenant,
             rent_charge=charge,
             amount=amount,
@@ -67,6 +73,7 @@ def initiate_payment(request, charge_id):
             payment_reference=reference,
             status='pending'
         )
+        transaction.on_commit(lambda: notify_landlord_payment_request(payment_request))
         
         messages.success(request, "Payment request submitted successfully. Waiting for landlord approval.")
         return redirect("tenant_dashboard")
@@ -84,15 +91,13 @@ def report_issue(request):
         title = request.POST.get("title")
         description = request.POST.get("description")
 
-        Issue.objects.create(
+        issue = Issue.objects.create(
             tenant=tenant,
             title=title,
             description=description
         )
+        transaction.on_commit(lambda: notify_landlord_issue_report(issue))
 
         return redirect("tenant_dashboard")
 
     return render(request, "tenantviews/report_issue.html", {"tenant": tenant})
-
-
-
