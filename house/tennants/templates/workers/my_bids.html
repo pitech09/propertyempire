@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}My Bids - PropertyEmpire{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">My <span>Bids</span></h1>
+    <a href="{% url 'worker_dashboard' %}" class="btn btn-secondary">← Dashboard</a>
+</div>
+<div class="card">
+    <div class="card-header"><h2 class="card-title">All My Bids ({{ bids|length }})</h2></div>
+    {% if bids %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Property</th>
+                    <th>Bid Amount</th>
+                    <th>Est. Days</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bid in bids %}
+                <tr>
+                    <td style="color: var(--text-primary); font-weight: 600;">{{ bid.issue.title }}</td>
+                    <td>{{ bid.issue.tenant.house.flat_building.building_name }}</td>
+                    <td style="color: var(--primary); font-weight: 700;">M{{ bid.amount|floatformat:2 }}</td>
+                    <td>{{ bid.estimated_days }} day{{ bid.estimated_days|pluralize }}</td>
+                    <td><span class="badge {% if bid.status == 'accepted' %}badge-success{% elif bid.status == 'rejected' %}badge-danger{% elif bid.status == 'completed' %}badge-info{% elif bid.status == 'withdrawn' %}badge-warning{% else %}badge-warning{% endif %}">{{ bid.get_status_display }}</span></td>
+                    <td>{{ bid.submitted_at|date:"M d, Y" }}</td>
+                    <td>
+                        {% if bid.status == 'pending' %}
+                        <form method="post" action="{% url 'worker_withdraw_bid' bid.pk %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;">Withdraw</button>
+                        </form>
+                        {% else %}<span style="color: var(--text-muted);">-</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <h3>No bids yet</h3>
+        <p>Browse open jobs and place your first bid!</p>
+        <a href="{% url 'worker_dashboard' %}" class="btn btn-primary">Browse Jobs</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

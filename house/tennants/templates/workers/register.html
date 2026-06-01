@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Worker Registration - PropertyEmpire{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Worker <span>Registration</span></h1>
+    <a href="{% url 'login' %}" class="btn btn-secondary">Already have an account?</a>
+</div>
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Register as an Independent Worker</h2></div>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Register to bid on maintenance jobs from property owners. You choose which jobs to bid on.</p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% for field in form %}
+            <div class="form-group">
+                <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}<small style="color: var(--text-muted);">{{ field.help_text }}</small>{% endif %}
+                {% if field.errors %}<small style="color: var(--danger);">{{ field.errors|striptags }}</small>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div style="margin-top: 1.5rem;"><button type="submit" class="btn btn-primary">Register as Worker</button></div>
+    </form>
+</div>
+{% endblock %}

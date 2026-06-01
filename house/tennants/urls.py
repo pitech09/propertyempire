@@ -11,10 +11,12 @@ from tennants.views.web import (dashboard, BuildingListViewWeb, BuildingDetailVi
                     PaymentCreateViewWeb, PaymentUpdateViewWeb,
                     RentChargeListViewWeb, RentChargeDetailViewWeb,
                     RentChargeCreateViewWeb, RentChargeUpdateViewWeb,
-                    bulk_create_rent_charges,send_rent_reminders,
+                    bulk_create_rent_charges, send_rent_reminders,
                     PaymentRequestListViewWeb, PaymentRequestDetailViewWeb,
                     PaymentRequestCreateViewWeb, PaymentRequestUpdateViewWeb,
-                    IssueListViewWeb, IssueDetailViewWeb, IssueUpdateViewWeb)
+                    IssueListViewWeb, IssueDetailViewWeb, IssueUpdateViewWeb,
+                    expense_list, expense_create, expense_edit, expense_delete,
+                    issue_bids, accept_bid, reject_bid)
 
 from tennants.views.api import (TenantListView, TenantDetailView,
                     HouseListView, HouseDetailView,
@@ -96,6 +98,17 @@ urlpatterns = [
     path('issues/', IssueListViewWeb.as_view(), name='issue_list'),
     path('issues/<int:pk>/', IssueDetailViewWeb.as_view(), name='issue_detail'),
     path('issues/<int:pk>/edit/', IssueUpdateViewWeb.as_view(), name='issue_edit'),
+
+    # Expenses
+    path('expenses/', expense_list, name='expense_list'),
+    path('expenses/add/', expense_create, name='expense_add'),
+    path('expenses/<int:pk>/edit/', expense_edit, name='expense_edit'),
+    path('expenses/<int:pk>/delete/', expense_delete, name='expense_delete'),
+
+    # Bid reviews (landlord reviews worker bids on an issue)
+    path('issues/<int:issue_id>/bids/', issue_bids, name='issue_bids'),
+    path('bids/<int:bid_id>/accept/', accept_bid, name='accept_bid'),
+    path('bids/<int:bid_id>/reject/', reject_bid, name='reject_bid'),
 ]
 
 
@@ -103,4 +116,19 @@ urlpatterns += [
     path("tenant/dashboard/", tenant_dashboard, name="tenant_dashboard"),
     path("tenant/report/", report_issue, name="report_issue"),
     path("tenant/payment/initiate/<int:charge_id>/", initiate_payment, name="initiate_payment"),
+]
+
+# Worker portal URLs
+from tennants.views.workers import (
+    worker_register, worker_dashboard, worker_place_bid,
+    worker_my_bids, worker_withdraw_bid, worker_profile
+)
+
+urlpatterns += [
+    path("workers/register/", worker_register, name="worker_register"),
+    path("workers/dashboard/", worker_dashboard, name="worker_dashboard"),
+    path("workers/issues/<int:issue_id>/bid/", worker_place_bid, name="worker_place_bid"),
+    path("workers/bids/", worker_my_bids, name="worker_my_bids"),
+    path("workers/bids/<int:bid_id>/withdraw/", worker_withdraw_bid, name="worker_withdraw_bid"),
+    path("workers/profile/", worker_profile, name="worker_profile"),
 ]

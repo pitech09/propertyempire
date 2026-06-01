@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Worker Dashboard - PropertyEmpire{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Worker <span>Dashboard</span></h1>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{% url 'worker_profile' %}" class="btn btn-secondary">My Profile</a>
+        <a href="{% url 'worker_my_bids' %}" class="btn btn-primary">My Bids ({{ total_bids }})</a>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ open_issues|length }}</div>
+        <div class="stat-label">Open Jobs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ pending_bids }}</div>
+        <div class="stat-label">Pending Bids</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ accepted_bids }}</div>
+        <div class="stat-label">Accepted Jobs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ total_bids }}</div>
+        <div class="stat-label">Total Bids</div>
+    </div>
+</div>
+
+{% if not worker.is_approved %}
+<div class="alert alert-warning">Your profile is pending admin approval. You can still browse and bid on jobs.</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Open Maintenance Jobs</h2>
+    </div>
+    {% if open_issues %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Property</th>
+                    <th>House</th>
+                    <th>Status</th>
+                    <th>Reported</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in open_issues %}
+                <tr>
+                    <td style="color: var(--text-primary); font-weight: 600;">{{ issue.title }}</td>
+                    <td>{{ issue.tenant.house.flat_building.building_name }}</td>
+                    <td>{{ issue.tenant.house.house_number }}</td>
+                    <td><span class="badge {% if issue.status == 'approved' %}badge-info{% else %}badge-warning{% endif %}">{{ issue.get_status_display }}</span></td>
+                    <td>{{ issue.created_at|date:"M d, Y" }}</td>
+                    <td><a href="{% url 'worker_place_bid' issue.pk %}" class="btn btn-sm btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">Place Bid</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">✅</div>
+        <h3>No open jobs right now</h3>
+        <p>New maintenance jobs will appear as tenants report them.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

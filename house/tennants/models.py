@@ -329,11 +329,220 @@ class PaymentRequest(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+
+# ------------------------------
+# Worker Model (Independent Contractor)
+# ------------------------------
+class Worker(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="worker_profile", null=True, blank=True)
+    full_name = models.CharField(max_length=100, db_index=True)
+    email = models.EmailField(unique=True, db_index=True)
+    phone = PhoneNumberField(unique=True, db_index=True)
+    id_number = models.CharField(max_length=20, null=True, blank=True)
+    skills = models.CharField(
+        max_length=255,
+        help_text="Comma-separated skills e.g. plumbing, electrical, carpentry",
+    )
+    bio = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    is_approved = models.BooleanField(default=False, db_index=True, help_text="Approved by platform admin")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.full_name} ({self.skills})"
+
+    @property
+    def skill_list(self):
+        return [s.strip() for s in (self.skills or "").split(",") if s.strip()]
+
+
+# ------------------------------
+# Expense Model (Building-level, House-level, or Tenant-specific)
+# ------------------------------
+class Expense(models.Model):
+    EXPENSE_CATEGORIES = [
+        ("utilities", "Utilities (Water/Electricity)"),
+        ("maintenance", "Maintenance & Repairs"),
+        ("taxes", "Property Taxes & Levies"),
+        ("insurance", "Insurance"),
+        ("cleaning", "Cleaning & Sanitation"),
+        ("security", "Security"),
+        ("management", "Management Fees"),
+        ("advertising", "Advertising & Marketing"),
+        ("supplies", "Supplies"),
+        ("other", "Other"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="expenses", db_index=True)
+    flat_building = models.ForeignKey(
+        FlatBuilding,
+        on_delete=models.CASCADE,
+        related_name="expenses",
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Entire building expense (e.g. water bill, security). Optional if house or tenant is set.",
+    )
+    house = models.ForeignKey(
+        House,
+        on_delete=models.CASCADE,
+        related_name="expenses",
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="House-specific expense (e.g. individual electricity meter).",
+    )
+    tenant = models.ForeignKey(
+        "Tenant",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expenses",
+        db_index=True,
+        help_text="Tenant-specific expense charged to this tenant (recoverable).",
+    )
+    category = models.CharField(max_length=20, choices=EXPENSE_CATEGORIES, default="maintenance", db_index=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, db_index=True)
+    description = models.CharField(max_length=255)
+    vendor = models.CharField(max_length=100, blank=True, help_text="Who was paid (worker name, utility co., etc.)")
+    expense_date = models.DateField(default=datetime.now, db_index=True)
+    receipt = models.FileField(upload_to="expense_receipts/", null=True, blank=True)
+    is_recoverable = models.BooleanField(default=False, db_index=True,
+        help_text="If checked, this expense will be charged to the tenant (added to their balance).")
+    is_recovered = models.BooleanField(default=False,
+        help_text="Has the tenant reimbursed this expense?")
+    recovered_date = models.DateField(null=True, blank=True,
+        help_text="When the tenant reimbursed this expense.")
+    related_issue = models.ForeignKey(
+        "Issue",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expenses",
+        help_text="Optional - maintenance issue this expense resolved",
+    )
+    related_bid = models.ForeignKey(
+        "MaintenanceBid",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expenses",
+        help_text="Optional - worker bid this expense settled",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-expense_date", "-created_at")
+        indexes = [
+            models.Index(fields=["user", "expense_date"]),
+            models.Index(fields=["flat_building", "expense_date"]),
+        ]
+
     def clean(self):
-        if self.payment_method != "cash" and not self.payment_reference:
-            raise ValidationError({
-                "payment_reference": "Reference required for non-cash payments"
-            })
-        
-        if self.rent_charge and self.tenant != self.rent_charge.tenant:
-            raise ValidationError("Payment tenant must match rent charge tenant")
+        if self.amount is None or self.amount < 0:
+            raise ValidationError({"amount": "Amount must be non-negative."})
+        if not self.description:
+            raise ValidationError({"description": "Description is required."})
+        if self.house and self.flat_building and self.house.flat_building_id != self.flat_building.id:
+            raise ValidationError({"house": "Selected house does not belong to the chosen building."})
+        if self.house and not self.flat_building:
+            self.flat_building = self.house.flat_building
+        if self.tenant and self.house and self.tenant.house_id != self.house.id:
+            raise ValidationError({"tenant": "Selected tenant does not belong to the chosen house."})
+        if self.is_recoverable and not self.tenant:
+            raise ValidationError("A tenant must be selected for recoverable expenses.")
+
+    def save(self, *args, **kwargs):
+        if self.tenant and not self.flat_building:
+            self.flat_building = self.tenant.house.flat_building if self.tenant.house else None
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def mark_recovered(self, date=None):
+        from django.utils import timezone
+        self.is_recovered = True
+        self.recovered_date = date or timezone.now().date()
+        self.save(update_fields=["is_recovered", "recovered_date"])
+
+    def __str__(self):
+        parts = []
+        if self.flat_building:
+            parts.append(f"Building: {self.flat_building.building_name}")
+        if self.house:
+            parts.append(f"House: {self.house.house_number}")
+        if self.tenant:
+            parts.append(f"Tenant: {self.tenant.full_name}")
+        target = ", ".join(parts) if parts else "General"
+        rec = " (Recoverable)" if self.is_recoverable else ""
+        paid = " (Recovered)" if self.is_recovered else ""
+        return f"{self.get_category_display()} - M{self.amount} - {target}{rec}{paid}"
+
+
+# ------------------------------
+# MaintenanceBid Model (Worker's Bid on an Issue)
+# ------------------------------
+class MaintenanceBid(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending Review"),
+        ("accepted", "Accepted"),
+        ("rejected", "Rejected"),
+        ("withdrawn", "Withdrawn"),
+        ("completed", "Completed"),
+    ]
+
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name="bids", db_index=True)
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE, related_name="bids", db_index=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, db_index=True)
+    estimated_days = models.PositiveIntegerField(help_text="Estimated days to complete the work")
+    notes = models.TextField(blank=True, help_text="Approach, materials, or any clarifications for the landlord")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending", db_index=True)
+    submitted_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-submitted_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["issue"],
+                condition=models.Q(status="accepted"),
+                name="unique_accepted_bid_per_issue",
+            ),
+        ]
+
+    def clean(self):
+        if self.amount is None or self.amount < 0:
+            raise ValidationError({"amount": "Bid amount must be non-negative."})
+        if self.estimated_days is None or self.estimated_days < 1:
+            raise ValidationError({"estimated_days": "Estimated days must be at least 1."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def accept(self):
+        """Accept this bid and reject siblings."""
+        from django.utils import timezone
+        with transaction.atomic():
+            self.status = "accepted"
+            self.decided_at = timezone.now()
+            self.save(update_fields=["status", "decided_at"])
+            MaintenanceBid.objects.filter(issue=self.issue).exclude(pk=self.pk).update(
+                status="rejected", decided_at=timezone.now()
+            )
+            self.issue.status = "in_progress"
+            self.issue.save(update_fields=["status"])
+
+    def reject(self):
+        from django.utils import timezone
+        self.status = "rejected"
+        self.decided_at = timezone.now()
+        self.save(update_fields=["status", "decided_at"])
+
+    def __str__(self):
+        return f"Bid M{self.amount} by {self.worker.full_name} on '{self.issue.title}' ({self.status})"

@@ -1043,7 +1043,9 @@
                 <li><a href="{% url 'tenant_list' %}" class="nav-link {% if 'tenant' in request.resolver_match.url_name %}active{% endif %}">Tenants</a></li>
                 <li><a href="{% url 'rent_charge_list' %}" class="nav-link {% if 'rent_charge' in request.resolver_match.url_name %}active{% endif %}">Charges</a></li>
                 <li><a href="{% url 'payment_list' %}" class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">Payments</a></li>
+                <li><a href="{% url 'expense_list' %}" class="nav-link {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">Expenses</a></li>
                 <li><a href="{% url 'issue_list' %}" class="nav-link {% if 'issue' in request.resolver_match.url_name %}active{% endif %}">Issues</a></li>
+                <li><a href="{% url 'worker_register' %}" class="nav-link">Hire Workers</a></li>
                 {% endif %}
             </ul>
 

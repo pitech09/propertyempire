@@ -63,35 +63,77 @@ def _money(value):
 
 
 def _landlord_financials(user):
+    from tennants.models import Expense
     payments = Payment.objects.filter(tenant__house__user=user)
     charges = RentCharge.objects.filter(tenant__house__user=user).select_related("tenant", "tenant__house")
     active_tenants = Tenant.objects.filter(house__user=user, is_active=True, house__isnull=False)
+    houses = House.objects.filter(user=user)
 
+    # Income
     total_collected = _money(payments.aggregate(total=Sum("amount"))["total"])
     total_billed = _money(charges.aggregate(total=Sum("amount_due"))["total"])
     total_outstanding = sum((charge.balance for charge in charges), Decimal("0.00"))
     expected_monthly_rent = sum((tenant.rent for tenant in active_tenants), Decimal("0.00"))
+    collection_rate = round((total_collected / total_billed * 100), 1) if total_billed else 0
+
+    # Expenses
+    total_expenses = _money(Expense.objects.filter(user=user).aggregate(total=Sum("amount"))["total"])
+    unrecovered_expenses = _money(
+        Expense.objects.filter(user=user, is_recoverable=True, is_recovered=False)
+        .aggregate(total=Sum("amount"))["total"]
+    )
+    effective_expenses = total_expenses - unrecovered_expenses
+    net_income = total_collected - effective_expenses
+
+    # Platform fees
     platform_fee = total_collected * settings.PLATFORM_TRANSACTION_FEE_RATE
+    monthly_sub = settings.LANDLORD_MONTHLY_SUBSCRIPTION
+
+    # Security deposits held
+    total_deposits_held = _money(houses.aggregate(total=Sum("deposit_amount"))["total"])
+
+    # Pending
+    pending_payment_requests = PaymentRequest.objects.filter(
+        tenant__house__user=user, status="pending"
+    ).count()
+    pending_recoverable_count = Expense.objects.filter(
+        user=user, is_recoverable=True, is_recovered=False
+    ).count()
 
     return {
+        # Income
         "total_collected": total_collected,
         "total_billed": total_billed,
         "total_outstanding": total_outstanding,
         "expected_monthly_rent": expected_monthly_rent,
+        "collection_rate": collection_rate,
+        # Expenses
+        "total_expenses": total_expenses,
+        "unrecovered_expenses": unrecovered_expenses,
+        "net_income": net_income,
+        # Deposits
+        "total_deposits_held": total_deposits_held,
+        "deposit_count": houses.filter(deposit_amount__gt=0).count(),
+        # Platform
         "platform_fee": platform_fee,
-        "net_after_fees": total_collected - platform_fee,
+        "monthly_subscription": monthly_sub,
+        "net_after_fees_platform": total_collected - platform_fee - monthly_sub,
+        # Pending
+        "pending_recoverable_count": pending_recoverable_count,
+        "pending_payment_requests": pending_payment_requests,
+        # Counts
         "payment_count": payments.count(),
         "tenant_count": active_tenants.count(),
-        "pending_payment_requests": PaymentRequest.objects.filter(
-            tenant__house__user=user,
-            status="pending",
-        ).count(),
+        "active_tenant_count": active_tenants.count(),
+        "house_count": houses.count(),
     }
 
 
 def _landlord_building_financials(user):
     rows = []
     buildings = FlatBuilding.objects.filter(user=user).prefetch_related("houses")
+    from tennants.models import Expense
+    from django.db.models import Sum
 
     for building in buildings:
         payments = Payment.objects.filter(tenant__house__flat_building=building)
@@ -102,12 +144,20 @@ def _landlord_building_financials(user):
         outstanding = sum((charge.balance for charge in charges), Decimal("0.00"))
         expected_rent = sum((tenant.rent for tenant in active_tenants), Decimal("0.00"))
 
+        # Expense tracking per building
+        total_expenses = _money(
+            Expense.objects.filter(user=user, flat_building=building).aggregate(total=Sum("amount"))["total"]
+        )
+        net_income = collected - total_expenses
+
         rows.append({
             "building": building,
             "collected": collected,
             "billed": billed,
             "outstanding": outstanding,
             "expected_rent": expected_rent,
+            "expenses": total_expenses,
+            "net_income": net_income,
             "active_tenants": active_tenants.count(),
             "occupancy": building.how_many_occupied,
         })
@@ -1100,3 +1150,129 @@ def send_rent_reminders(request):
     }
 
     return render(request, 'payments/send_sms.html', context)
+
+
+# ============================================================================
+# EXPENSE VIEWS
+# ============================================================================
+from tennants.models import Expense, MaintenanceBid, Worker
+from tennants.forms import ExpenseForm
+from django.db.models import Sum
+
+
+@login_required
+def expense_list(request):
+    """List all expenses for the landlord's properties"""
+    expenses = Expense.objects.filter(user=request.user).select_related(
+        "flat_building", "house"
+    ).order_by("-expense_date", "-created_at")
+
+    building_id = request.GET.get("building")
+    if building_id:
+        expenses = expenses.filter(flat_building_id=building_id)
+
+    category = request.GET.get("category")
+    if category:
+        expenses = expenses.filter(category=category)
+
+    total = expenses.aggregate(total=Sum("amount"))["total"] or 0
+    buildings = FlatBuilding.objects.filter(user=request.user)
+
+    context = {
+        "expenses": expenses,
+        "total": total,
+        "buildings": buildings,
+        "expense_categories": Expense.EXPENSE_CATEGORIES,
+    }
+    return render(request, "expenses/expense_list.html", context)
+
+
+@login_required
+def expense_create(request):
+    """Create a new expense"""
+    if request.method == "POST":
+        form = ExpenseForm(user=request.user, data=request.POST, files=request.FILES)
+        if form.is_valid():
+            expense = form.save(commit=False)
+            expense.user = request.user
+            expense.save()
+            messages.success(request, f"Expense of M{expense.amount:,.2f} recorded!")
+            return redirect("expense_list")
+    else:
+        form = ExpenseForm(user=request.user)
+
+    context = {"form": form}
+    return render(request, "expenses/expense_form.html", context)
+
+
+@login_required
+def expense_edit(request, pk):
+    """Edit an expense"""
+    expense = get_object_or_404(Expense, pk=pk, user=request.user)
+    if request.method == "POST":
+        form = ExpenseForm(user=request.user, data=request.POST, files=request.FILES, instance=expense)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Expense updated successfully!")
+            return redirect("expense_list")
+    else:
+        form = ExpenseForm(user=request.user, instance=expense)
+
+    context = {"form": form, "expense": expense}
+    return render(request, "expenses/expense_form.html", context)
+
+
+@login_required
+def expense_delete(request, pk):
+    """Delete an expense"""
+    expense = get_object_or_404(Expense, pk=pk, user=request.user)
+    if request.method == "POST":
+        expense.delete()
+        messages.success(request, "Expense deleted.")
+        return redirect("expense_list")
+    return render(request, "expenses/expense_confirm_delete.html", {"expense": expense})
+
+
+# ============================================================================
+# BID REVIEW VIEWS (Landlord accepts/rejects worker bids)
+# ============================================================================
+
+@login_required
+def issue_bids(request, issue_id):
+    """View all bids on a specific issue"""
+    issue = get_object_or_404(Issue, pk=issue_id, tenant__house__user=request.user)
+    bids = MaintenanceBid.objects.filter(issue=issue).select_related(
+        "worker", "worker__user"
+    ).order_by("amount")  # lowest first
+
+    context = {
+        "issue": issue,
+        "bids": bids,
+    }
+    return render(request, "expenses/issue_bids.html", context)
+
+
+@login_required
+def accept_bid(request, bid_id):
+    """Landlord accepts a bid"""
+    bid = get_object_or_404(
+        MaintenanceBid, pk=bid_id, issue__tenant__house__user=request.user, status="pending"
+    )
+    bid.accept()
+    messages.success(
+        request,
+        f"Bid by {bid.worker.full_name} (M{bid.amount:,.2f}) accepted! "
+        f"Issue status updated to 'In Progress'."
+    )
+    return redirect("issue_bids", issue_id=bid.issue_id)
+
+
+@login_required
+def reject_bid(request, bid_id):
+    """Landlord rejects a bid"""
+    bid = get_object_or_404(
+        MaintenanceBid, pk=bid_id, issue__tenant__house__user=request.user, status="pending"
+    )
+    bid.reject()
+    messages.info(request, f"Bid by {bid.worker.full_name} rejected.")
+    return redirect("issue_bids", issue_id=bid.issue_id)

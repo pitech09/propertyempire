@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Expenses - PropertyEmpire{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Property <span>Expenses</span></h1>
+    <a href="{% url 'expense_add' %}" class="btn btn-primary">+ Add Expense</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">All Expenses</h2>
+        <div style="color: var(--danger); font-size: 1.2rem; font-weight: 700;">
+            Total: M{{ total|floatformat:2 }}
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; width: 100%;">
+            <select name="building" class="form-control" style="min-width: 180px;" onchange="this.form.submit()">
+                <option value="">All Buildings</option>
+                {% for b in buildings %}
+                <option value="{{ b.pk }}" {% if request.GET.building == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.building_name }}</option>
+                {% endfor %}
+            </select>
+            <select name="category" class="form-control" style="min-width: 180px;" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                {% for key, label in expense_categories %}
+                <option value="{{ key }}" {% if request.GET.category == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <a href="{% url 'expense_list' %}" class="btn btn-secondary btn-sm">Clear</a>
+        </form>
+    </div>
+
+    {% if expenses %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Property</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Vendor</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.expense_date|date:"M d, Y" }}</td>
+                    <td>{% if expense.flat_building %}{{ expense.flat_building.building_name }}{% else %}General{% endif %}</td>
+                    <td><span class="badge badge-info">{{ expense.get_category_display }}</span></td>
+                    <td style="color: var(--text-primary);">{{ expense.description }}</td>
+                    <td>{{ expense.vendor|default:"-" }}</td>
+                    <td style="color: var(--danger); font-weight: 600;">M{{ expense.amount|floatformat:2 }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'expense_edit' expense.pk %}" class="btn-icon" title="Edit">✏️</a>
+                            <a href="{% url 'expense_delete' expense.pk %}" class="btn-icon danger" title="Delete">🗑</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <h3>No expenses recorded</h3>
+        <p>Track property expenses like maintenance, utilities, and taxes.</p>
+        <a href="{% url 'expense_add' %}" class="btn btn-primary">+ Add First Expense</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

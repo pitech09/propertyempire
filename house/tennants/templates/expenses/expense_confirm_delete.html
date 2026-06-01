@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Delete Expense - PropertyEmpire{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Delete <span>Expense</span></h1>
+    <a href="{% url 'expense_list' %}" class="btn btn-secondary">← Back</a>
+</div>
+<div class="card">
+    <h2 style="color: var(--text); margin-bottom: 1rem;">Are you sure?</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        This will permanently delete the expense:
+        <strong style="color: var(--danger);">{{ expense.description }}</strong>
+        (M{{ expense.amount|floatformat:2 }})
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            <a href="{% url 'expense_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

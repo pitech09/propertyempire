@@ -1,5 +1,5 @@
 from django import forms
-from .models import House, Payment, Tenant, FlatBuilding, LandlordProfile, RentCharge, PaymentRequest
+from .models import House, Payment, Tenant, FlatBuilding, LandlordProfile, RentCharge, PaymentRequest, Worker, Expense, MaintenanceBid
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from phonenumber_field.formfields import PhoneNumberField
@@ -86,4 +86,94 @@ class PaymentInitForm(forms.ModelForm):
         fields ='__all__'
 
 
-# Additional forms can be added here as needed
+# ------------------------------
+# Worker Registration Form
+# ------------------------------
+class WorkerRegistrationForm(UserCreationForm):
+    full_name = forms.CharField(max_length=100, required=True)
+    email = forms.EmailField(required=True)
+    phone = PhoneNumberField(required=True)
+    id_number = forms.CharField(max_length=20, required=False)
+    skills = forms.CharField(
+        max_length=255, required=True,
+        help_text="Comma-separated skills e.g. plumbing, electrical, carpentry",
+        widget=forms.TextInput(attrs={"placeholder": "e.g. painting, electrical, plumbing"})
+    )
+    bio = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Briefly describe your experience"}),
+        required=False
+    )
+
+    class Meta:
+        model = User
+        fields = ["username", "full_name", "email", "phone", "id_number", "skills", "bio", "password1", "password2"]
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+            Worker.objects.create(
+                user=user,
+                full_name=self.cleaned_data["full_name"],
+                email=self.cleaned_data["email"],
+                phone=self.cleaned_data["phone"],
+                id_number=self.cleaned_data.get("id_number", ""),
+                skills=self.cleaned_data["skills"],
+                bio=self.cleaned_data.get("bio", ""),
+                is_approved=False,
+            )
+        return user
+
+
+# ------------------------------
+# Worker Profile Update Form
+# ------------------------------
+class WorkerProfileForm(forms.ModelForm):
+    class Meta:
+        model = Worker
+        fields = ["full_name", "phone", "id_number", "skills", "bio"]
+        widgets = {
+            "skills": forms.TextInput(attrs={"placeholder": "e.g. painting, electrical, plumbing"}),
+            "bio": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+# ------------------------------
+# Maintenance Bid Form (for workers)
+# ------------------------------
+class MaintenanceBidForm(forms.ModelForm):
+    class Meta:
+        model = MaintenanceBid
+        fields = ["amount", "estimated_days", "notes"]
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Describe your approach, materials needed, etc."}),
+            "amount": forms.NumberInput(attrs={"step": "0.01"}),
+        }
+
+
+# ------------------------------
+# Expense Form
+# ------------------------------
+class ExpenseForm(forms.ModelForm):
+    class Meta:
+        model = Expense
+        fields = ["flat_building", "house", "tenant", "category", "amount", "description", "vendor", "expense_date", "receipt", "is_recoverable"]
+        widgets = {
+            "expense_date": forms.DateInput(attrs={"type": "date"}),
+            "description": forms.TextInput(attrs={"placeholder": "What was this expense for?"}),
+            "vendor": forms.TextInput(attrs={"placeholder": "Who was paid?"}),
+            "receipt": forms.ClearableFileInput(),
+        }
+        help_texts = {
+            "is_recoverable": "Check if this expense should be charged back to the tenant (e.g. excess water usage)",
+        }
+
+    def __init__(self, user=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields["flat_building"].queryset = FlatBuilding.objects.filter(user=user)
+            self.fields["house"].queryset = House.objects.filter(user=user)
+            self.fields["tenant"].queryset = Tenant.objects.filter(house__user=user, is_active=True)
+            # Prioritize tenant when recoverable
+            self.fields["tenant"].required = False

@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}Financial Dashboard - PropertyEmpire{% endblock %}
-
 {% block content %}
 <div class="breadcrumb">
     <a href="{% url 'dashboard' %}">Dashboard</a>
@@ -11,55 +9,121 @@
 
 <div class="page-header">
     <h1 class="page-title">Financial <span>Dashboard</span></h1>
-    <a href="{% url 'payment_list' %}" class="btn btn-secondary">Payments</a>
-</div>
-
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-value">M {{ total_collected|floatformat:2 }}</div>
-        <div class="stat-label">Rent Collected</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">M {{ total_outstanding|floatformat:2 }}</div>
-        <div class="stat-label">Outstanding Rent</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">M {{ expected_monthly_rent|floatformat:2 }}</div>
-        <div class="stat-label">Expected Monthly Rent</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">M {{ net_after_fees|floatformat:2 }}</div>
-        <div class="stat-label">Net After App Fee</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">M {{ platform_fee|floatformat:2 }}</div>
-        <div class="stat-label">App Transaction Fees</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ pending_payment_requests }}</div>
-        <div class="stat-label">Pending Requests</div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{% url 'expense_list' %}" class="btn btn-secondary">Expenses</a>
+        <a href="{% url 'payment_list' %}" class="btn btn-secondary">Payments</a>
     </div>
 </div>
 
+<!-- ===== INCOME SECTION ===== -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Income Overview</h2>
+    </div>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+        <div class="stat-card">
+            <div class="stat-value">M{{ total_collected|floatformat:2 }}</div>
+            <div class="stat-label">Rent Collected</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ collection_rate }}%</div>
+            <div class="stat-label">Collection Rate</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">M{{ total_outstanding|floatformat:2 }}</div>
+            <div class="stat-label">Outstanding Rent</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">M{{ expected_monthly_rent|floatformat:2 }}</div>
+            <div class="stat-label">Expected Monthly Rent</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">M{{ total_billed|floatformat:2 }}</div>
+            <div class="stat-label">Total Billed (All Time)</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== EXPENSES & NET INCOME SECTION ===== -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Expenses & Net Income</h2>
+    </div>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+        <div class="stat-card">
+            <div class="stat-value" style="color: var(--danger); -webkit-text-fill-color: var(--danger);">M{{ total_expenses|floatformat:2 }}</div>
+            <div class="stat-label">Total Expenses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: {% if net_income >= 0 %}var(--success){% else %}var(--danger){% endif %}; -webkit-text-fill-color: {% if net_income >= 0 %}var(--success){% else %}var(--danger){% endif %};">M{{ net_income|floatformat:2 }}</div>
+            <div class="stat-label">Net Income (Collected - Expenses)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ pending_recoverable_count }}</div>
+            <div class="stat-label">Unrecovered Tenant Expenses</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== DEPOSITS SECTION ===== -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Security Deposits</h2>
+    </div>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+        <div class="stat-card">
+            <div class="stat-value">M{{ total_deposits_held|floatformat:2 }}</div>
+            <div class="stat-label">Total Deposits Held</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ deposit_count }}</div>
+            <div class="stat-label">Houses With Deposits</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== PLATFORM COSTS SECTION ===== -->
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">Platform Costs</h2>
     </div>
-    <div class="detail-grid">
-        <div class="detail-item">
-            <div class="detail-label">Transaction Fee Rate</div>
-            <div class="detail-value">{{ transaction_fee_rate|floatformat:2 }}</div>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+        <div class="stat-card">
+            <div class="stat-value">M{{ platform_fee|floatformat:2 }}</div>
+            <div class="stat-label">Transaction Fees ({{ transaction_fee_rate|floatformat:2 }}%)</div>
         </div>
-        <div class="detail-item">
-            <div class="detail-label">Monthly Subscription</div>
-            <div class="detail-value">M {{ monthly_subscription|floatformat:2 }}</div>
+        <div class="stat-card">
+            <div class="stat-value">M{{ monthly_subscription|floatformat:2 }}</div>
+            <div class="stat-label">Monthly Subscription</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">M{{ net_after_fees_platform|floatformat:2 }}</div>
+            <div class="stat-label">Net After All Fees</div>
         </div>
     </div>
 </div>
 
+<!-- ===== PENDING ITEMS SECTION ===== -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Building Performance</h2>
+        <h2 class="card-title">Pending Items</h2>
+    </div>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+        <div class="stat-card">
+            <div class="stat-value">{{ pending_payment_requests }}</div>
+            <div class="stat-label">Payment Requests</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ pending_recoverable_count }}</div>
+            <div class="stat-label">Unrecovered Expenses</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== PER-PROPERTY BREAKDOWN ===== -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Per-Property Financials</h2>
     </div>
     {% if building_financials %}
     <div class="table-container">
@@ -67,28 +131,26 @@
             <thead>
                 <tr>
                     <th>Building</th>
-                    <th>Active Tenants</th>
+                    <th>Tenants</th>
                     <th>Occupied</th>
                     <th>Expected Rent</th>
-                    <th>Billed</th>
                     <th>Collected</th>
+                    <th>Expenses</th>
+                    <th>Net Income</th>
                     <th>Outstanding</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in building_financials %}
                 <tr>
-                    <td>
-                        <a href="{% url 'building_detail' row.building.pk %}" style="color: var(--primary); text-decoration: none;">
-                            {{ row.building.building_name }}
-                        </a>
-                    </td>
+                    <td><a href="{% url 'building_detail' row.building.pk %}" style="color: var(--primary); text-decoration: none;">{{ row.building.building_name }}</a></td>
                     <td>{{ row.active_tenants }}</td>
                     <td>{{ row.occupancy }}</td>
-                    <td>M {{ row.expected_rent|floatformat:2 }}</td>
-                    <td>M {{ row.billed|floatformat:2 }}</td>
-                    <td style="color: var(--success);">M {{ row.collected|floatformat:2 }}</td>
-                    <td style="color: {% if row.outstanding > 0 %}var(--danger){% else %}var(--success){% endif %};">M {{ row.outstanding|floatformat:2 }}</td>
+                    <td>M{{ row.expected_rent|floatformat:2 }}</td>
+                    <td style="color: var(--success);">M{{ row.collected|floatformat:2 }}</td>
+                    <td style="color: var(--danger);">M{{ row.expenses|floatformat:2 }}</td>
+                    <td style="color: {% if row.net_income >= 0 %}var(--success){% else %}var(--danger){% endif %}; font-weight: 700;">M{{ row.net_income|floatformat:2 }}</td>
+                    <td style="color: {% if row.outstanding > 0 %}var(--danger){% else %}var(--success){% endif %};">M{{ row.outstanding|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -102,6 +164,7 @@
     {% endif %}
 </div>
 
+<!-- ===== RECENT PAYMENTS ===== -->
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">Recent Payments</h2>
@@ -125,7 +188,7 @@
                     <td>{{ payment.tenant.full_name }}</td>
                     <td>{{ payment.tenant.house.house_number|default:"-" }}</td>
                     <td>{{ payment.rent_charge.get_month_display }} {{ payment.rent_charge.year }}</td>
-                    <td style="color: var(--success);">M {{ payment.amount|floatformat:2 }}</td>
+                    <td style="color: var(--success);">M{{ payment.amount|floatformat:2 }}</td>
                     <td>{{ payment.paid_at|date:"M d, Y" }}</td>
                 </tr>
                 {% endfor %}
@@ -133,13 +196,11 @@
         </table>
     </div>
     {% else %}
-    <div class="empty-state">
-        <h3>No payments yet</h3>
-        <p>Recorded payments will appear here.</p>
-    </div>
+    <div class="empty-state"><h3>No payments yet</h3></div>
     {% endif %}
 </div>
 
+<!-- ===== OUTSTANDING RENT ===== -->
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">Outstanding Rent</h2>
@@ -153,7 +214,7 @@
                     <th>Tenant</th>
                     <th>House</th>
                     <th>Period</th>
-                    <th>Amount Due</th>
+                    <th>Due</th>
                     <th>Balance</th>
                 </tr>
             </thead>
@@ -163,18 +224,15 @@
                     <td>{{ charge.tenant.full_name }}</td>
                     <td>{{ charge.tenant.house.house_number|default:"-" }}</td>
                     <td>{{ charge.get_month_display }} {{ charge.year }}</td>
-                    <td>M {{ charge.amount_due|floatformat:2 }}</td>
-                    <td style="color: var(--danger);">M {{ charge.balance|floatformat:2 }}</td>
+                    <td>M{{ charge.amount_due|floatformat:2 }}</td>
+                    <td style="color: var(--danger);">M{{ charge.balance|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     {% else %}
-    <div class="empty-state">
-        <h3>No outstanding rent</h3>
-        <p>All recorded rent charges are settled.</p>
-    </div>
+    <div class="empty-state"><h3>All rent is paid!</h3></div>
     {% endif %}
 </div>
 {% endblock %}

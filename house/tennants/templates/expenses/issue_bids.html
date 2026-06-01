@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Worker Bids - PropertyEmpire{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Bids for: <span>{{ issue.title }}</span></h1>
+    <a href="{% url 'issue_list' %}" class="btn btn-secondary">← Back to Issues</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Issue Details</h2>
+        <span class="badge {% if issue.status == 'resolved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% elif issue.status == 'approved' %}badge-warning{% else %}badge-danger{% endif %}">
+            {{ issue.get_status_display }}
+        </span>
+    </div>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Tenant</div>
+            <div class="detail-value">{{ issue.tenant.full_name }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">House</div>
+            <div class="detail-value">{{ issue.tenant.house }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Reported</div>
+            <div class="detail-value">{{ issue.created_at|date:"M d, Y" }}</div>
+        </div>
+    </div>
+    <p style="color: var(--text-secondary); margin-top: 1rem;">{{ issue.description }}</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Worker Bids ({{ bids|length }})</h2>
+    </div>
+
+    {% if bids %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Worker</th>
+                    <th>Phone</th>
+                    <th>Skills</th>
+                    <th>Bid Amount</th>
+                    <th>Est. Days</th>
+                    <th>Notes</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bid in bids %}
+                <tr>
+                    <td style="color: var(--text-primary); font-weight: 600;">{{ bid.worker.full_name }}</td>
+                    <td>{{ bid.worker.phone }}</td>
+                    <td>{{ bid.worker.skills }}</td>
+                    <td style="color: var(--primary); font-weight: 700;">M{{ bid.amount|floatformat:2 }}</td>
+                    <td>{{ bid.estimated_days }} day{{ bid.estimated_days|pluralize }}</td>
+                    <td style="max-width: 200px;">{{ bid.notes|default:"-"|truncatewords:15 }}</td>
+                    <td>
+                        <span class="badge {% if bid.status == 'accepted' %}badge-success{% elif bid.status == 'rejected' %}badge-danger{% elif bid.status == 'completed' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ bid.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ bid.submitted_at|date:"M d, Y" }}</td>
+                    <td>
+                        {% if bid.status == 'pending' %}
+                        <div class="action-buttons">
+                            <form method="post" action="{% url 'accept_bid' bid.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-primary" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;">Accept</button>
+                            </form>
+                            <form method="post" action="{% url 'reject_bid' bid.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;">Reject</button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span style="color: var(--text-muted);">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">🔨</div>
+        <h3>No bids yet</h3>
+        <p>Workers will place bids on this issue. Check back later.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

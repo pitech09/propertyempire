@@ -104,6 +104,9 @@ def get_login_redirect_url(user):
     if Tenant.objects.filter(user=user).exists():
         return "/tenant/dashboard/"
 
+    if hasattr(user, "worker_profile") and user.worker_profile is not None:
+        return "/workers/dashboard/"
+
     return "/dashboard/"
 
 
