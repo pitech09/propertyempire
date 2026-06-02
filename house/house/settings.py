@@ -30,7 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY") 
 
 # DEBUG = "True" if os.getenv("DEBUG", "False") == "True" else False
-DEBUG = False
+DEBUG = True
 REDIS_HOST = os.getenv("REDIS_URL")
 
 # twilio settings
@@ -71,14 +71,14 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "propertyempire.onrender.com"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "propertyempire.onrender.com", ".onrender.com"]
 
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:3000",
-    'https://propertyempire.onrender.com'
-    
+    "https://propertyempire.onrender.com",
+
 ]
 
 CORS_ALLOW_ALL_ORIGINS = False
