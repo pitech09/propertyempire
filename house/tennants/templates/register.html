@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +7,97 @@
     <title>Register - PropertyEmpire</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ====== LOADING SPINNER OVERLAY ====== */
+        #page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0f;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 99999;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        #page-loader.active {
+            display: flex;
+        }
+
+        #page-loader.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner-ring {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 4px solid #2a2a3a;
+            border-top-color: #dcf11c;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .spinner-text {
+            margin-top: 20px;
+            color: #6b6b7e;
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.05em;
+            animation: pulse-text 1.5s ease-in-out infinite;
+        }
+
+        .spinner-logo {
+            margin-bottom: 24px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            font-family: 'Space Grotesk', sans-serif;
+            color: #ffffff;
+        }
+
+        .spinner-logo span {
+            color: #dcf11c;
+        }
+
+        .spinner-dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-left: 4px;
+        }
+
+        .spinner-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #dcf11c;
+            animation: dot-bounce 1.4s ease-in-out infinite both;
+        }
+
+        .spinner-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .spinner-dots span:nth-child(2) { animation-delay: -0.16s; }
+        .spinner-dots span:nth-child(3) { animation-delay: 0s; }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-text {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes dot-bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        /* ====== END LOADING SPINNER ====== */
+
         :root {
             --primary: #dcf11c;
             --primary-glow: rgba(220, 241, 28, 0.15);
@@ -35,6 +127,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            overflow-y: auto;
             overflow-x: hidden;
         }
 
@@ -47,15 +140,16 @@
             height: 100%;
             pointer-events: none;
             z-index: 0;
+            opacity: 0.4;
         }
 
         .bg-pattern::before {
             content: '';
             position: absolute;
-            top: -20%;
-            left: -15%;
-            width: 600px;
-            height: 600px;
+            top: -30%;
+            right: -20%;
+            width: 700px;
+            height: 700px;
             background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
             border-radius: 50%;
         }
@@ -63,8 +157,8 @@
         .bg-pattern::after {
             content: '';
             position: absolute;
-            bottom: -30%;
-            right: -10%;
+            bottom: -40%;
+            left: -15%;
             width: 500px;
             height: 500px;
             background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
@@ -85,41 +179,6 @@
             z-index: 0;
         }
 
-        /* Geometric Shapes */
-        .geo-shape {
-            position: fixed;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .geo-1 {
-            top: 10%;
-            right: 12%;
-            width: 70px;
-            height: 70px;
-            border: 2px solid rgba(220, 241, 28, 0.2);
-            transform: rotate(45deg);
-        }
-
-        .geo-2 {
-            bottom: 15%;
-            left: 8%;
-            width: 90px;
-            height: 90px;
-            border: 2px solid rgba(59, 130, 246, 0.15);
-            border-radius: 50%;
-        }
-
-        .geo-3 {
-            top: 55%;
-            right: 5%;
-            width: 50px;
-            height: 50px;
-            background: rgba(57, 228, 22, 0.08);
-            border-radius: 12px;
-            transform: rotate(-15deg);
-        }
-
         /* Register Container */
         .register-container {
             position: relative;
@@ -132,7 +191,7 @@
             background: var(--dark-card);
             border: 1px solid var(--border);
             border-radius: 24px;
-            padding: 44px 40px;
+            padding: 48px 40px;
             position: relative;
             overflow: hidden;
         }
@@ -144,37 +203,37 @@
             left: 0;
             right: 0;
             height: 2px;
-            background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
         }
 
         /* Logo */
         .logo {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 36px;
         }
 
         .logo-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            width: 64px;
+            height: 64px;
+            background: var(--primary);
             border-radius: 16px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
             transform: rotate(-5deg);
-            box-shadow: 0 10px 40px rgba(220, 241, 28, 0.25);
+            box-shadow: 0 10px 40px rgba(220, 241, 28, 0.3);
         }
 
         .logo-icon svg {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             fill: var(--dark);
         }
 
         .logo h1 {
             color: var(--text);
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
@@ -188,29 +247,29 @@
 
         .logo p {
             color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-top: 6px;
+            font-size: 0.95rem;
+            margin-top: 8px;
         }
 
         /* Form */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .form-group label {
             display: block;
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             font-weight: 500;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 14px 16px;
+            padding: 16px 18px;
             background: var(--dark-elevated);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 14px;
             color: var(--text);
             font-size: 1rem;
             font-family: inherit;
@@ -225,6 +284,24 @@
 
         .form-group input::placeholder {
             color: var(--text-muted);
+        }
+
+        .form-group .helptext {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 6px;
+        }
+
+        .form-group ul {
+            list-style: none;
+            margin: 6px 0 0 0;
+            padding: 0;
+        }
+
+        .form-group ul li {
+            color: var(--text-muted);
+            font-size: 0.8rem;
         }
 
         /* Submit Button */
@@ -249,11 +326,15 @@
             box-shadow: 0 12px 40px rgba(220, 241, 28, 0.35);
         }
 
+        .btn-register:active {
+            transform: translateY(0);
+        }
+
         /* Divider */
         .divider {
             display: flex;
             align-items: center;
-            margin: 24px 0;
+            margin: 28px 0;
             color: var(--text-muted);
             font-size: 0.85rem;
         }
@@ -288,32 +369,15 @@
             text-decoration: underline;
         }
 
-        /* Back Link */
-        .back-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .back-link a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: color 0.2s;
-        }
-
-        .back-link a:hover {
-            color: var(--blue);
-        }
-
         /* Alerts */
         .alert {
             padding: 14px 18px;
             border-radius: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .alert-error {
@@ -322,103 +386,84 @@
             color: #fca5a5;
         }
 
-        .error-message {
-            color: #fca5a5;
-            font-size: 0.8rem;
-            margin-top: 6px;
+        .errorlist {
+            list-style: none;
+            margin: 8px 0 0 0;
+            padding: 0;
         }
 
-        @media (max-width: 520px) {
+        .errorlist li {
+            color: #fca5a5;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 480px) {
             .register-card {
-                padding: 32px 24px;
+                padding: 36px 28px;
             }
 
             .logo h1 {
-                font-size: 1.4rem;
+                font-size: 1.5rem;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Full-page Loading Spinner -->
+    <div id="page-loader" class="active">
+        <div class="spinner-logo">Property<span>Empire</span></div>
+        <div class="spinner-ring"></div>
+        <div class="spinner-text">
+            Loading
+            <span class="spinner-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </span>
+        </div>
+    </div>
+
     <!-- Background Effects -->
     <div class="bg-pattern"></div>
     <div class="grid-bg"></div>
-    <div class="geo-shape geo-1"></div>
-    <div class="geo-shape geo-2"></div>
-    <div class="geo-shape geo-3"></div>
 
     <div class="register-container">
         <div class="register-card">
             <div class="logo">
                 <div class="logo-icon">
-<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  
-  <!-- Gradient -->
-  <defs>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f7e27a"/>
-      <stop offset="50%" stop-color="#d4af37"/>
-      <stop offset="100%" stop-color="#a67c00"/>
-    </linearGradient>
-  </defs>
-
-  <!-- Base arc (empire foundation) -->
-  <path d="M30 130 Q100 170 170 130" 
-        fill="none" 
-        stroke="url(#gold)" 
-        stroke-width="4"/>
-
-  <!-- Main building -->
-  <rect x="85" y="60" width="30" height="70" fill="url(#gold)" rx="2"/>
-
-  <!-- Left house -->
-  <rect x="45" y="85" width="28" height="45" fill="url(#gold)" rx="2"/>
-  <polygon points="45,85 59,70 73,85" fill="url(#gold)"/>
-
-  <!-- Right building -->
-  <rect x="127" y="80" width="32" height="50" fill="url(#gold)" rx="2"/>
-
-  <!-- Crown (empire identity) -->
-  <path d="M90 50 
-           L100 35 
-           L110 50 
-           L120 40 
-           L115 55 
-           L85 55 
-           L80 40 Z"
-        fill="url(#gold)"/>
-
-  <!-- Windows (minimal detail) -->
-  <rect x="92" y="75" width="6" height="6" fill="#fff" opacity="0.6"/>
-  <rect x="92" y="90" width="6" height="6" fill="#fff" opacity="0.6"/>
-
-</svg>
+                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#f7e27a"/>
+                                <stop offset="50%" stop-color="#d4af37"/>
+                                <stop offset="100%" stop-color="#a67c00"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M30 130 Q100 170 170 130" fill="none" stroke="url(#gold)" stroke-width="4"/>
+                        <rect x="85" y="60" width="30" height="70" fill="url(#gold)" rx="2"/>
+                        <rect x="45" y="85" width="28" height="45" fill="url(#gold)" rx="2"/>
+                        <polygon points="45,85 59,70 73,85" fill="url(#gold)"/>
+                        <rect x="127" y="80" width="32" height="50" fill="url(#gold)" rx="2"/>
+                        <path d="M90 50 L100 35 L110 50 L120 40 L115 55 L85 55 L80 40 Z" fill="url(#gold)"/>
+                        <rect x="92" y="75" width="6" height="6" fill="#fff" opacity="0.6"/>
+                        <rect x="92" y="90" width="6" height="6" fill="#fff" opacity="0.6"/>
+                    </svg>
                 </div>
-                <h1>Create Your <span>Account</span></h1>
-                <p>Join PropertyEmpire and manage your properties</p>
+                <h1>Property<span>Empire</span></h1>
+                <p>Create your account</p>
             </div>
-            
-            <form method="post" novalidate>
-                {% csrf_token %}
-                
-                {% if form.errors %}
-                    <div class="alert alert-error">
-                        <p>Please correct the errors below.</p>
-                    </div>
-                {% endif %}
-                
-                {% for field in form %}
-                    <div class="form-group">
-                        {{ field.label_tag }}
-                        {{ field }}
-                        {% if field.errors %}
-                            <div class="error-message">
-                                {{ field.errors }}
-                            </div>
-                        {% endif %}
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
                     </div>
                 {% endfor %}
-                
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
                 <button type="submit" class="btn-register">Create Account</button>
             </form>
 
@@ -429,11 +474,68 @@
             <p class="login-link">
                 Already have an account? <a href="{% url 'login' %}">Sign in</a>
             </p>
-            
-            <div class="back-link">
-                <a href="/">← Back to Home</a>
-            </div>
         </div>
     </div>
+
+    <!-- Loading Spinner Script -->
+    <script>
+        (function() {
+            'use strict';
+
+            const loader = document.getElementById('page-loader');
+
+            function hideLoader() {
+                if (loader) {
+                    loader.classList.add('fade-out');
+                    setTimeout(function() {
+                        loader.classList.remove('active');
+                        loader.style.display = 'none';
+                    }, 300);
+                }
+            }
+
+            function showLoader() {
+                if (loader) {
+                    loader.style.display = 'flex';
+                    loader.classList.remove('fade-out');
+                    loader.classList.add('active');
+                }
+            }
+
+            // Intercept all navigation link clicks
+            document.addEventListener('click', function(e) {
+                var target = e.target.closest('a');
+                if (!target) return;
+
+                var href = target.getAttribute('href');
+                if (!href || 
+                    href.startsWith('#') || 
+                    href.startsWith('javascript:') || 
+                    href.startsWith('mailto:') ||
+                    href.startsWith('tel:') ||
+                    target.hasAttribute('download') ||
+                    target.hasAttribute('data-no-loader') ||
+                    target.target === '_blank') {
+                    return;
+                }
+
+                var currentPath = window.location.pathname + window.location.search;
+                var linkPath = new URL(href, window.location.origin).pathname + new URL(href, window.location.origin).search;
+                if (currentPath !== linkPath) {
+                    showLoader();
+                }
+            }, true);
+
+            // Hide loader once the page is fully loaded
+            if (document.readyState === 'complete') {
+                hideLoader();
+            } else {
+                window.addEventListener('load', hideLoader);
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(hideLoader, 5000);
+                });
+            }
+        })();
+    </script>
 </body>
 </html>

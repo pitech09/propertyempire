@@ -84,7 +84,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = False
 
-# if tab is  losed in the browser the user is logged out
+# if tab is closed in the browser the user is logged out
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 60 * 30  # 30 minutes
 # always ask for authentication after 5 minutes of inactivity
@@ -304,9 +304,6 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
-# never login user automatically
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_AGE = 300  # 5 minutes
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
