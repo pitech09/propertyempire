@@ -1,0 +1,60 @@
+{% extends "guesthouse/base_guesthouse.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="gh-page-header">
+    <h1 class="gh-page-title">Guest House Dashboard</h1>
+    <div>
+        <a href="{% url 'guesthouse:walk_in' %}" class="gh-btn gh-btn-primary"><i class="bi bi-person-plus"></i> Walk-In</a>
+        <a href="{% url 'guesthouse:reception_search' %}" class="gh-btn gh-btn-outline"><i class="bi bi-box-arrow-in-right"></i> Check In</a>
+    </div>
+</div>
+
+<div class="gh-stats">
+    <div class="gh-stat"><div class="gh-stat-value">{{ metrics.arrivals_today|default:"0" }}</div><div class="gh-stat-label">Arrivals Today</div></div>
+    <div class="gh-stat"><div class="gh-stat-value">{{ metrics.departures_today|default:"0" }}</div><div class="gh-stat-label">Departures Today</div></div>
+    <div class="gh-stat"><div class="gh-stat-value">{{ metrics.occupied_rooms|default:"0" }}</div><div class="gh-stat-label">Occupied Rooms</div></div>
+    <div class="gh-stat"><div class="gh-stat-value">{{ metrics.available_rooms|default:"0" }}</div><div class="gh-stat-label">Available Rooms</div></div>
+    <div class="gh-stat"><div class="gh-stat-value">{{ metrics.revenue_today|default:"0" }}</div><div class="gh-stat-label">Revenue Today</div></div>
+    <div class="gh-stat"><div class="gh-stat-value">{{ metrics.pending_bookings|default:"0" }}</div><div class="gh-stat-label">Pending Bookings</div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="gh-card">
+            <div class="gh-card-header"><h5 class="gh-card-title">Occupancy Rate (Last 14 Days)</h5></div>
+            <div class="gh-card-body"><canvas id="occChart" height="200"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="gh-card">
+            <div class="gh-card-header"><h5 class="gh-card-title">Revenue (Last 14 Days)</h5></div>
+            <div class="gh-card-body"><canvas id="revChart" height="200"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="gh-card">
+            <div class="gh-card-header"><h5 class="gh-card-title">Revenue by Source</h5></div>
+            <div class="gh-card-body"><canvas id="sourceChart" height="200"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="gh-card">
+            <div class="gh-card-header"><h5 class="gh-card-title">Room Type Performance</h5></div>
+            <div class="gh-card-body"><canvas id="roomTypeChart" height="200"></canvas></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const occData = {{ occupancy_data|safe }};
+const revData = {{ revenue_data|safe }};
+const srcData = {{ rev_sources|safe }};
+const rtData = {{ rev_room_types|safe }};
+
+new Chart(document.getElementById('occChart'), { type: 'line', data: { labels: occData.map(d=>d.label), datasets: [{ label: 'Occupancy %', data: occData.map(d=>d.value), borderColor: '#0d6efd', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false } });
+new Chart(document.getElementById('revChart'), { type: 'bar', data: { labels: revData.map(d=>d.label), datasets: [{ label: 'Revenue', data: revData.map(d=>d.value), backgroundColor: '#198754' }] }, options: { responsive: true, maintainAspectRatio: false } });
+new Chart(document.getElementById('sourceChart'), { type: 'doughnut', data: { labels: Object.keys(srcData), datasets: [{ data: Object.values(srcData), backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#0dcaf0'] }] } });
+new Chart(document.getElementById('roomTypeChart'), { type: 'bar', data: { labels: Object.keys(rtData), datasets: [{ label: 'Revenue', data: Object.values(rtData), backgroundColor: '#0d6efd' }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' } });
+</script>
+{% endblock %}

@@ -3,16 +3,6 @@ URL configuration for house project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
 from django.contrib import admin
@@ -35,14 +25,17 @@ from tennants.views.web import landing_page, dashboard
 from tennants.views.tenants import report_issue, tenant_dashboard
 
 
-     
+from django.urls import reverse_lazy
+
+LOGOUT_REDIRECT_URL = reverse_lazy('landing')
+
 urlpatterns = [
     path("", landing_page, name="landing"),
     path("admin/", admin.site.urls),
     path("api/admin/logout/", TokenRefreshView.as_view(), name="admin_logout"),
     path("acounts/", include("django.contrib.auth.urls")),
     path("api/", include("tennants.urls")),
-    path("api/token/",jwt_views.TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/", jwt_views.TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", jwt_views.TokenRefreshView.as_view(), name="token_refresh"),
     path("register/", register, name="register"),
     path("login/", login_view, name="login"),
@@ -51,8 +44,6 @@ urlpatterns = [
     path("dashboard/", dashboard, name="dashboard"),
     path("tenant/dashboard/", tenant_dashboard, name="tenant_dashboard"),
     path("tenant/report/", report_issue, name="report_issue"),
+    path("guesthouse/", include("guesthouse.urls")),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
 ]
-from django.urls import reverse_lazy
-
-LOGOUT_REDIRECT_URL = reverse_lazy('landing')

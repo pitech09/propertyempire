@@ -1,0 +1,26 @@
+{% extends "guesthouse/base_guesthouse.html" %}
+{% block title %}Housekeeping{% endblock %}
+{% block content %}
+<div class="gh-page-header">
+    <h1 class="gh-page-title">Housekeeping Tasks</h1>
+    <a href="{% url 'guesthouse:task_create' %}" class="gh-btn gh-btn-primary"><i class="bi bi-plus-lg"></i> New Task</a>
+</div>
+<div class="gh-filter-bar">
+    <form method="get" class="d-flex gap-2 flex-wrap">
+        <select name="status" class="gh-form-control" style="width:auto"><option value="">All Statuses</option>{% for k,v in status_choices %}<option value="{{ k }}" {% if status_filter == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+        <select name="task_type" class="gh-form-control" style="width:auto"><option value="">All Types</option>{% for k,v in type_choices %}<option value="{{ k }}" {% if type_filter == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+        <button type="submit" class="gh-btn gh-btn-outline"><i class="bi bi-funnel"></i> Filter</button>
+    </form>
+</div>
+<div class="gh-card"><div class="gh-card-body p-0"><div class="gh-table-wrap"><table class="gh-table">
+    <thead><tr><th>Room</th><th>Task Type</th><th>Status</th><th>Priority</th><th>Assigned To</th><th>Scheduled</th><th>Actions</th></tr></thead>
+    <tbody>{% for t in tasks %}
+        <tr><td><strong>{{ t.room.room_number }}</strong></td><td>{{ t.get_task_type_display }}</td><td><span class="gh-badge-status gh-badge-{{ t.status|cut:' ' }}">{{ t.get_status_display }}</span></td><td>{{ t.get_priority_display }}</td><td>{{ t.assigned_to.get_full_name|default:t.assigned_to.username|default:"-" }}</td><td>{{ t.scheduled_date|date:"M d" }}</td>
+        <td><div class="gh-actions">
+            <a href="{% url 'guesthouse:task_edit' t.pk %}" class="gh-action-btn"><i class="bi bi-pencil"></i></a>
+            {% if t.status != "completed" %}<a href="{% url 'guesthouse:task_complete' t.pk %}" class="gh-action-btn" style="color:var(--gh-success)"><i class="bi bi-check-lg"></i></a>{% endif %}
+        </div></td></tr>
+    {% empty %}<tr><td colspan="7"><div class="gh-empty"><div class="gh-empty-icon"><i class="bi bi-broom"></i></div><h3>No Tasks</h3></div></td></tr>
+    {% endfor %}</tbody>
+</table></div></div></div>
+{% endblock %}

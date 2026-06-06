@@ -107,6 +107,10 @@ def get_login_redirect_url(user):
     if hasattr(user, "worker_profile") and user.worker_profile is not None:
         return "/workers/dashboard/"
 
+    from guesthouse.views._common import ROLE_ADMIN, ROLE_PROPERTY_MANAGER, ROLE_RECEPTIONIST
+    if user.groups.filter(name__in=[ROLE_ADMIN, ROLE_PROPERTY_MANAGER, ROLE_RECEPTIONIST]).exists():
+        return "/guesthouse/"
+
     return "/dashboard/"
 
 
@@ -156,7 +160,6 @@ def register(request):
         form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            # set staff/superuser flags if needed
             user.is_staff = False
             user.is_superuser = False
             user.save()
@@ -165,8 +168,19 @@ def register(request):
             # ✅ Automatically log the user in
             login(request, user)
             
-            # ✅ Redirect into the app (e.g., dashboard)
-            return redirect("dashboard")  # replace "dashboard" with your main app URL name
+            # ✅ Redirect based on business type selection
+            business_type = request.POST.get("business_type", "rental")
+            if business_type == "guesthouse":
+                # Add user to Guesthouse Admin group for access
+                from django.contrib.auth.models import Group
+                from guesthouse.views._common import ROLE_ADMIN
+                admin_group, _ = Group.objects.get_or_create(name=ROLE_ADMIN)
+                user.groups.add(admin_group)
+                messages.success(request, "Welcome! Get started by setting up your rooms and room types.")
+                return redirect("guesthouse:dashboard")
+            
+            messages.success(request, "Welcome! Get started by adding your first building or property.")
+            return redirect("dashboard")
             
     else:
         form = RegistrationForm()
