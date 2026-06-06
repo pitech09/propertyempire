@@ -23,7 +23,7 @@
                 <div class="gh-detail-item"><div class="gh-detail-label">Email</div><div class="gh-detail-value">{{ guest.email|default:"-" }}</div></div>
                 <div class="gh-detail-item"><div class="gh-detail-label">ID/Passport</div><div class="gh-detail-value">{{ guest.national_id_or_passport|default:"-" }}</div></div>
                 <div class="gh-detail-item"><div class="gh-detail-label">Nationality</div><div class="gh-detail-value">{{ guest.nationality|default:"-" }}</div></div>
-                <div class="gh-detail-item"><div class="gh-detail-label">VIP</div><div class="gh-detail-value">{% if guest.is_vip %}⭐ Yes{% else %}No{% endif %}</div></div>
+                <div class="gh-detail-item"><div class="gh-detail-label">VIP</div><div class="gh-detail-value">{% if guest.is_vip %} Yes{% else %}No{% endif %}</div></div>
             </div></div>
         </div>
     </div>

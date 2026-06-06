@@ -2,6 +2,8 @@ from django.urls import path
 from tennants.views.tenants import initiate_payment, report_issue, tenant_dashboard,  health
 from tennants.views.web import (dashboard, BuildingListViewWeb, BuildingDetailViewWeb,
                     landlord_financial_dashboard, owner_dashboard,
+                    reports, export_payments_csv, export_tenants_csv,
+
                     BuildingCreateViewWeb, BuildingUpdateViewWeb, BuildingDeleteViewWeb,
                     HouseListViewWeb, HouseDetailViewWeb,
                     HouseCreateViewWeb, HouseUpdateViewWeb, HouseDeleteViewWeb,
@@ -47,8 +49,14 @@ urlpatterns = [
     path('health/', health, name='health_check'),
     path('financials/', landlord_financial_dashboard, name='landlord_financial_dashboard'),
     path('owner/dashboard/', owner_dashboard, name='owner_dashboard'),
-    
+
+    # Reports
+    path('reports/', reports, name='reports'),
+    path('reports/export/payments.csv', export_payments_csv, name='export_payments_csv'),
+    path('reports/export/tenants.csv', export_tenants_csv, name='export_tenants_csv'),
+
     # Buildings
+
     path('buildings/', BuildingListViewWeb.as_view(), name='building_list'),
     path('buildings/add/', BuildingCreateViewWeb.as_view(), name='building_add'),
     path('buildings/<int:pk>/', BuildingDetailViewWeb.as_view(), name='building_detail'),

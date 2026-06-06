@@ -165,10 +165,10 @@ def register(request):
             user.save()
             LandlordProfile.objects.create(user=user, phone=form.cleaned_data["phone"])
             
-            # ✅ Automatically log the user in
+            #  Automatically log the user in
             login(request, user)
             
-            # ✅ Redirect based on business type selection
+            #  Redirect based on business type selection
             business_type = request.POST.get("business_type", "rental")
             if business_type == "guesthouse":
                 # Add user to Guesthouse Admin group for access

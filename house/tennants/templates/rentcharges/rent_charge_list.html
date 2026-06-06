@@ -126,9 +126,9 @@
                     </td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'rent_charge_detail' charge.pk %}" class="btn-icon" title="View">👁</a>
-                            <a href="{% url 'rent_charge_edit' charge.pk %}" class="btn-icon" title="Edit">✏️</a>
-                            <a href="{% url 'payment_add' %}" class="btn-icon" title="Record Payment" style="border-color: var(--success); color: var(--success);">💰</a>
+                            <a href="{% url 'rent_charge_detail' charge.pk %}" class="btn-icon" title="View"></a>
+                            <a href="{% url 'rent_charge_edit' charge.pk %}" class="btn-icon" title="Edit"></a>
+                            <a href="{% url 'payment_add' %}" class="btn-icon" title="Record Payment" style="border-color: var(--success); color: var(--success);"></a>
                         </div>
                     </td>
                 </tr>
@@ -138,7 +138,7 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-icon"></div>
         <h3>No rent charges created</h3>
         <p>Create rent charges to track what tenants owe</p>
         <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem;">

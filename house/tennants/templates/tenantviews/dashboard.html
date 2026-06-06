@@ -2,49 +2,71 @@
 
 {% block title %}Tenant Dashboard - PropertyEmpire{% endblock %}
 
+{% block extra_head %}
+    {% include "_ux_partial.html" %}
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
-    <div>
-        <h1 class="page-title">Welcome, <span>{{ tenant.full_name }}</span></h1>
-        <p style="color: var(--text-secondary); margin-top: 0.4rem;">
-            {{ tenant.house|default:"No unit assigned" }}
-            {% if tenant.building_name %} · {{ tenant.building_name }}{% endif %}
+
+<!-- Hero Banner -->
+<div class="hero-banner">
+    <div class="hero-content">
+        <div class="hero-greeting">Welcome to your portal</div>
+        <h1 class="hero-title">Hello, <span>{{ tenant.full_name }}</span> </h1>
+        <p class="hero-subtitle">
+            {% if tenant.house %}
+                Unit <strong>{{ tenant.house }}</strong>
+                {% if tenant.building_name %} · {{ tenant.building_name }}{% endif %}
+            {% else %}
+                No unit assigned yet — please contact your landlord.
+            {% endif %}
         </p>
+        <div class="hero-actions" style="margin-top: 1rem;">
+            <a href="{% url 'report_issue' %}" class="btn btn-primary"> Report Issue</a>
+        </div>
     </div>
-    <a href="{% url 'report_issue' %}" class="btn btn-primary">Report Issue</a>
+    <div class="hero-illustration"></div>
 </div>
 
+<!-- Quick Stats -->
 <div class="stats-grid">
     <div class="stat-card">
+        <div class="stat-card-icon"></div>
         <div class="stat-value">M {{ tenant.rent }}</div>
         <div class="stat-label">Monthly Rent</div>
     </div>
     <div class="stat-card">
+        <div class="stat-card-icon {% if balance > 0 %}danger{% else %}success{% endif %}">
+            {% if balance > 0 %}{% else %}{% endif %}
+        </div>
         <div class="stat-value" style="{% if balance > 0 %}color: var(--danger); background: none; -webkit-text-fill-color: var(--danger);{% endif %}">
             M {{ balance }}
         </div>
         <div class="stat-label">Current Balance</div>
     </div>
     <div class="stat-card">
+        <div class="stat-card-icon success"></div>
         <div class="stat-value">{{ payments.count }}</div>
-        <div class="stat-label">Payments</div>
+        <div class="stat-label">Payments Made</div>
     </div>
     <div class="stat-card">
+        <div class="stat-card-icon info"></div>
         <div class="stat-value">{{ issues.count }}</div>
-        <div class="stat-label">Issues</div>
+        <div class="stat-label">Issues Reported</div>
     </div>
 </div>
 
+<!-- Unit Details -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Unit Details</h2>
+        <h2 class="card-title"> Unit Details</h2>
         <span class="badge {% if tenant.is_active %}badge-success{% else %}badge-danger{% endif %}">
             {% if tenant.is_active %}Active{% else %}Inactive{% endif %}
         </span>
     </div>
     <div class="detail-grid">
         <div class="detail-item">
-            <div class="detail-label">House</div>
+            <div class="detail-label">House / Unit</div>
             <div class="detail-value">{{ tenant.house|default:"Not assigned" }}</div>
         </div>
         <div class="detail-item">
@@ -62,9 +84,10 @@
     </div>
 </div>
 
+<!-- Rent Charges -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Rent Charges</h2>
+        <h2 class="card-title"> Rent Charges</h2>
     </div>
 
     {% if charges %}
@@ -79,7 +102,6 @@
                     <th>Action</th>
                 </tr>
             </thead>
-
             <tbody>
                 {% for charge in charges %}
                 <tr>
@@ -96,7 +118,7 @@
                     <td>
                         {% if charge.is_paid %}
                             <span style="color: var(--text-secondary); font-size: 0.9rem;">
-                                Settled
+                                 Settled
                             </span>
                         {% else %}
                             <a href="{% url 'initiate_payment' charge.id %}" class="btn btn-sm btn-primary">
@@ -112,15 +134,17 @@
 
     {% else %}
     <div class="empty-state">
+        <div class="empty-state-icon"></div>
         <h3>No rent charges yet</h3>
         <p>Your rent charges will appear here once they are created.</p>
     </div>
     {% endif %}
 </div>
 
+<!-- Payment History -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Payment History</h2>
+        <h2 class="card-title"> Payment History</h2>
     </div>
     {% if payments %}
     <div class="table-container">
@@ -137,7 +161,7 @@
                 {% for payment in payments %}
                 <tr>
                     <td>{{ payment.paid_at|date:"M d, Y" }}</td>
-                    <td>M {{ payment.amount }}</td>
+                    <td style="color: var(--success); font-weight: 600;">M {{ payment.amount }}</td>
                     <td>{{ payment.get_payment_method_display }}</td>
                     <td>{{ payment.payment_reference|default:"-" }}</td>
                 </tr>
@@ -147,17 +171,18 @@
     </div>
     {% else %}
     <div class="empty-state">
+        <div class="empty-state-icon"></div>
         <h3>No payments recorded</h3>
         <p>Your payment history will appear here after your landlord records a payment.</p>
-
     </div>
     {% endif %}
 </div>
 
+<!-- Maintenance Issues -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Maintenance Issues</h2>
-        <a href="{% url 'report_issue' %}" class="btn btn-secondary btn-sm">New Issue</a>
+        <h2 class="card-title"> Maintenance Issues</h2>
+        <a href="{% url 'report_issue' %}" class="btn btn-primary btn-sm">+ New Issue</a>
     </div>
     {% if issues %}
     <div class="table-container">
@@ -166,7 +191,7 @@
                 <tr>
                     <th>Issue</th>
                     <th>Status</th>
-                    <th>Created</th>
+                    <th>Reported</th>
                 </tr>
             </thead>
             <tbody>
@@ -186,10 +211,12 @@
     </div>
     {% else %}
     <div class="empty-state">
+        <div class="empty-state-icon"></div>
         <h3>No issues reported</h3>
         <p>Report maintenance issues from here whenever something needs attention.</p>
-        <a href="{% url 'report_issue' %}" class="btn btn-primary">Report Issue</a>
+        <a href="{% url 'report_issue' %}" class="btn btn-primary">+ Report Issue</a>
     </div>
     {% endif %}
 </div>
+
 {% endblock %}

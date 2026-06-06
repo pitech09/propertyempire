@@ -23,7 +23,7 @@
 <div id="helpModal" class="help-modal" onclick="if(event.target===this)this.style.display='none'">
     <div class="help-modal-content">
         <div class="help-modal-header">
-            <h3>🏢 About Buildings</h3>
+            <h3> About Buildings</h3>
             <button onclick="document.getElementById('helpModal').style.display='none'" class="help-modal-close">&times;</button>
         </div>
         <div class="help-modal-body">
@@ -80,9 +80,9 @@
                     <td>{{ building.tenant_count }}</td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'building_detail' building.pk %}" class="btn-icon" title="View Details">👁</a>
-                            <a href="{% url 'building_edit' building.pk %}" class="btn-icon" title="Edit">✏️</a>
-                            <a href="{% url 'building_delete' building.pk %}" class="btn-icon danger" title="Delete">🗑</a>
+                            <a href="{% url 'building_detail' building.pk %}" class="btn-icon" title="View Details"></a>
+                            <a href="{% url 'building_edit' building.pk %}" class="btn-icon" title="Edit"></a>
+                            <a href="{% url 'building_delete' building.pk %}" class="btn-icon danger" title="Delete"></a>
                         </div>
                     </td>
                 </tr>

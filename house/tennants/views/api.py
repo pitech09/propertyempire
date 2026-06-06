@@ -365,7 +365,7 @@ def user_login(request):
     """Login endpoint for regular users"""
     logger.debug(f"User login attempt with data: {request.data}")
     logger.debug(request.data)
-    print("DEBUG LOGIN BODY →", request.data)
+    print("DEBUG LOGIN BODY ", request.data)
 
     username = request.data.get('username')
     password = request.data.get('password')
@@ -418,10 +418,10 @@ def register(request):
             user.is_superuser = False
             user.save()
             
-            # ✅ Automatically log the user in
+            #  Automatically log the user in
             login(request, user)
             
-            # ✅ Redirect into the app (e.g., dashboard)
+            #  Redirect into the app (e.g., dashboard)
             return redirect("dashboard")  # replace "dashboard" with your main app URL name
             
     else:

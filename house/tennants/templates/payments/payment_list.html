@@ -13,7 +13,7 @@
     <h1 class="page-title">All <span>Payments</span></h1>
     <div style="display: flex; gap: 0.75rem; align-items: center;">
         <button type="button" class="btn-help" onclick="document.getElementById('helpModal').style.display='flex'">
-            ℹ️ How It Works
+            ℹ How It Works
         </button>
         <a href="{% url 'rent_charge_list' %}" class="btn btn-secondary">View Rent Charges</a>
         <a href="{% url 'payment_request_list' %}" class="btn btn-secondary">Payment Requests</a>
@@ -25,7 +25,7 @@
 <div id="helpModal" class="help-modal" onclick="if(event.target===this)this.style.display='none'">
     <div class="help-modal-content">
         <div class="help-modal-header">
-            <h3>💰 About Payments</h3>
+            <h3> About Payments</h3>
             <button onclick="document.getElementById('helpModal').style.display='none'" class="help-modal-close">&times;</button>
         </div>
         <div class="help-modal-body">
@@ -115,8 +115,8 @@
                     <td>{{ payment.paid_at|date:"M d, Y H:i" }}</td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'payment_detail' payment.pk %}" class="btn-icon" title="View">👁</a>
-                            <a href="{% url 'payment_edit' payment.pk %}" class="btn-icon" title="Edit">✏️</a>
+                            <a href="{% url 'payment_detail' payment.pk %}" class="btn-icon" title="View"></a>
+                            <a href="{% url 'payment_edit' payment.pk %}" class="btn-icon" title="Edit"></a>
                         </div>
                     </td>
                 </tr>

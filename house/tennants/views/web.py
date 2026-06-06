@@ -266,7 +266,177 @@ def dashboard(request):
 
 
 @login_required
+def reports(request):
+    """Reports hub: financial, occupancy, payment, maintenance, tenant."""
+    from datetime import datetime
+    from django.db.models.functions import TruncMonth
+    from django.db.models import Count
+
+    if Tenant.objects.filter(user=request.user).exists():
+        return HttpResponseForbidden()
+
+    user = request.user
+    report_type = request.GET.get('type', 'financial')
+    months_back = int(request.GET.get('months', '6'))
+    months_back = max(1, min(months_back, 24))
+
+    now = timezone.now()
+    start_date = now - timezone.timedelta(days=30 * months_back)
+
+    # --- Financial report ---
+    financials = _landlord_financials(user)
+    payments = Payment.objects.filter(
+        tenant__house__user=user, paid_at__gte=start_date
+    ).select_related('tenant', 'tenant__house', 'rent_charge').order_by('-paid_at')
+    charges = RentCharge.objects.filter(
+        tenant__house__user=user
+    ).select_related('tenant', 'tenant__house').order_by('-year', '-month')
+
+    # --- Occupancy report ---
+    buildings = FlatBuilding.objects.filter(user=user).prefetch_related('houses')
+    total_houses = House.objects.filter(user=user).count()
+    occupied_houses = House.objects.filter(user=user, occupation=True).count()
+    vacant_houses = total_houses - occupied_houses
+    occupancy_pct = round((occupied_houses / total_houses) * 100, 1) if total_houses else 0
+
+    # --- Payment report (monthly buckets) ---
+    monthly_payments = (
+        Payment.objects
+        .filter(tenant__house__user=user, paid_at__gte=start_date)
+        .annotate(month=TruncMonth('paid_at'))
+        .values('month')
+        .annotate(total=Sum('amount'), count=Count('id'))
+        .order_by('month')
+    )
+    monthly_outstanding = (
+        RentCharge.objects
+        .filter(tenant__house__user=user, year__gte=start_date.year)
+        .values('year', 'month')
+        .annotate(billed=Sum('amount_due'))
+        .order_by('year', 'month')
+    )
+
+    # --- Maintenance report ---
+    issues_qs = Issue.objects.filter(tenant__house__user=user)
+    issues_pending = issues_qs.filter(status='pending').count()
+    issues_inprogress = issues_qs.filter(status='in_progress').count()
+    issues_approved = issues_qs.filter(status='approved').count()
+    issues_resolved = issues_qs.filter(status='resolved').count()
+    recent_issues = issues_qs.select_related('tenant', 'tenant__house').order_by('-created_at')[:20]
+
+    # --- Tenant report ---
+    tenants_all = Tenant.objects.filter(house__user=user).select_related('house', 'house__flat_building')
+    tenants_active = tenants_all.filter(is_active=True)
+    tenants_inactive = tenants_all.filter(is_active=False)
+    tenants_with_balance = []
+    for t in tenants_active:
+        b = sum(c.balance for c in RentCharge.objects.filter(tenant=t))
+        if b > 0:
+            tenants_with_balance.append({'tenant': t, 'balance': b})
+    tenants_with_balance.sort(key=lambda x: x['balance'], reverse=True)
+
+    context = {
+        'report_type': report_type,
+        'months_back': months_back,
+        'start_date': start_date,
+        'end_date': now,
+        'buildings_count': buildings.count(),
+
+        # Financial
+        'financials': financials,
+        'payments': payments[:50],
+        'charges': charges[:50],
+
+        # Occupancy
+        'buildings': buildings,
+        'total_houses': total_houses,
+        'occupied_houses': occupied_houses,
+        'vacant_houses': vacant_houses,
+        'occupancy_pct': occupancy_pct,
+
+        # Monthly series
+        'monthly_payments': list(monthly_payments),
+        'monthly_outstanding': list(monthly_outstanding),
+
+        # Maintenance
+        'issues_pending': issues_pending,
+        'issues_inprogress': issues_inprogress,
+        'issues_approved': issues_approved,
+        'issues_resolved': issues_resolved,
+        'recent_issues': recent_issues,
+
+        # Tenants
+        'tenants_active_count': tenants_active.count(),
+        'tenants_inactive_count': tenants_inactive.count(),
+        'tenants_with_balance': tenants_with_balance[:20],
+    }
+    return render(request, 'reports.html', context)
+
+
+@login_required
+def export_payments_csv(request):
+    """Export payments to CSV for the current landlord."""
+    import csv
+    from django.http import HttpResponse
+
+    if Tenant.objects.filter(user=request.user).exists():
+        return HttpResponseForbidden()
+
+    payments = Payment.objects.filter(
+        tenant__house__user=request.user
+    ).select_related('tenant', 'tenant__house', 'rent_charge').order_by('-paid_at')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="payments_export.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Tenant', 'House', 'Rent Period', 'Amount (M)', 'Method', 'Reference'])
+    for p in payments:
+        writer.writerow([
+            p.paid_at.strftime('%Y-%m-%d %H:%M'),
+            p.tenant.full_name,
+            p.tenant.house.house_number if p.tenant.house else '-',
+            f"{p.rent_charge.get_month_display()} {p.rent_charge.year}" if p.rent_charge else '-',
+            p.amount,
+            p.get_payment_method_display(),
+            p.payment_reference or '-',
+        ])
+    return response
+
+
+@login_required
+def export_tenants_csv(request):
+    """Export tenants to CSV for the current landlord."""
+    import csv
+    from django.http import HttpResponse
+
+    if Tenant.objects.filter(user=request.user).exists():
+        return HttpResponseForbidden()
+
+    tenants = Tenant.objects.filter(
+        house__user=request.user
+    ).select_related('house', 'house__flat_building').order_by('full_name')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="tenants_export.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Name', 'Phone', 'Email', 'ID Number', 'House', 'Building', 'Status', 'Rent Due Date'])
+    for t in tenants:
+        writer.writerow([
+            t.full_name,
+            t.phone or '-',
+            t.email or '-',
+            t.id_number or '-',
+            t.house.house_number if t.house else '-',
+            t.house.flat_building.building_name if t.house and t.house.flat_building else '-',
+            'Active' if t.is_active else 'Inactive',
+            t.rent_due_date.strftime('%Y-%m-%d') if t.rent_due_date else '-',
+        ])
+    return response
+
+
+@login_required
 def landlord_financial_dashboard(request):
+
     if Tenant.objects.filter(user=request.user).exists():
         return HttpResponseForbidden()
 
@@ -987,11 +1157,11 @@ def bulk_create_rent_charges(request):
 
         if not month or not year:
             messages.error(request, "Please select month and year.")
-            return redirect("rent_charge_bulk_create")  # ✅ Fixed: use URL name
+            return redirect("rent_charge_bulk_create")  #  Fixed: use URL name
 
         if not tenant_ids:
             messages.warning(request, "No tenants selected.")
-            return redirect("rent_charge_bulk_create")  # ✅ Fixed: use URL name
+            return redirect("rent_charge_bulk_create")  #  Fixed: use URL name
 
         # Convert to integers
         try:
@@ -1000,7 +1170,7 @@ def bulk_create_rent_charges(request):
             tenant_ids = [int(tid) for tid in tenant_ids]
         except ValueError:
             messages.error(request, "Invalid month, year, or tenant selection.")
-            return redirect("rent_charge_bulk_create")  # ✅ Fixed: use URL name
+            return redirect("rent_charge_bulk_create")  #  Fixed: use URL name
 
         # Create rent charges
         created_count = 0
@@ -1044,20 +1214,20 @@ def bulk_create_rent_charges(request):
         if created_count > 0:
             messages.success(
                 request, 
-                f"✓ Successfully created {created_count} rent charge(s) for {month_name} {year}"
+                f" Successfully created {created_count} rent charge(s) for {month_name} {year}"
             )
         if skipped_count > 0:
             messages.info(
                 request, 
-                f"⊘ Skipped {skipped_count} - charges already exist"
+                f" Skipped {skipped_count} - charges already exist"
             )
         if error_count > 0:
             messages.error(
                 request, 
-                f"✗ Failed to create {error_count} charge(s)"
+                f" Failed to create {error_count} charge(s)"
             )
         
-        return redirect("rent_charge_bulk_create")  # ✅ Fixed: use URL name
+        return redirect("rent_charge_bulk_create")  #  Fixed: use URL name
 
     context = {
         "current_year": current_year,
@@ -1111,7 +1281,7 @@ def send_rent_reminders(request):
                 except RentCharge.DoesNotExist:
                     pass
         
-        messages.success(request, f'✓ Sent {sent_count} reminders. Failed: {failed_count}')
+        messages.success(request, f' Sent {sent_count} reminders. Failed: {failed_count}')
         return redirect('send_rent_reminders')
     
     # GET request - show preview

@@ -1,35 +1,178 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - House Management{% endblock %}
+{% block title %}Dashboard - PropertyEmpire{% endblock %}
+
+{% block extra_head %}
+    {% include "_ux_partial.html" %}
+{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1 class="page-title">Welcome back, <span>{{ request.user.username }}</span></h1>
+
+<!-- Hero Welcome Banner -->
+<div class="hero-banner">
+    <div class="hero-content">
+        <div class="hero-greeting">{{ now|date:"l" }} &middot; {{ now|date:"M d, Y" }}</div>
+        <h1 class="hero-title">Welcome back, <span>{{ request.user.username }}</span></h1>
+        <p class="hero-subtitle">Here's what's happening across your property portfolio today.</p>
+        <div class="hero-actions" style="margin-top: 1rem;">
+            <a href="{% url 'reports' %}" class="btn btn-primary"> View Reports</a>
+            <a href="{% url 'rent_charge_bulk_create' %}" class="btn btn-secondary"> Bulk Create Charges</a>
+        </div>
+    </div>
+    <div class="hero-illustration"></div>
+</div>
+
+<!-- Stats Grid with icons -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-icon"></div>
+        <div class="stat-value">{{ buildings.count }}</div>
+        <div class="stat-label">Total Buildings</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon info"></div>
+        <div class="stat-value">{{ total_houses }}</div>
+        <div class="stat-label">Total Houses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon success"></div>
+        <div class="stat-value">{{ occupied_houses }}</div>
+        <div class="stat-label">Occupied</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon warning"></div>
+        <div class="stat-value">{{ vacant_houses }}</div>
+        <div class="stat-label">Vacant</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon"></div>
+        <div class="stat-value">{{ active_tenants }}</div>
+        <div class="stat-label">Active Tenants</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon success"></div>
+        <div class="stat-value">{{ percent_occupied }}%</div>
+        <div class="stat-label">Occupancy Rate</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon {% if pending_issues %}warning{% else %}info{% endif %}"></div>
+        <div class="stat-value" style="{% if pending_issues %}color: var(--primary); background: none; -webkit-text-fill-color: var(--primary);{% endif %}">
+            {{ pending_issues }}
+        </div>
+        <div class="stat-label">Pending Issues</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon info"></div>
+        <div class="stat-value">{{ in_progress_issues }}</div>
+        <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon success"></div>
+        <div class="stat-value">{{ resolved_issues }}</div>
+        <div class="stat-label">Resolved Issues</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon {% if pending_payment_requests %}warning{% else %}info{% endif %}"></div>
+        <div class="stat-value" style="{% if pending_payment_requests %}color: var(--primary); background: none; -webkit-text-fill-color: var(--primary);{% endif %}">
+            {{ pending_payment_requests }}
+        </div>
+        <div class="stat-label">Payment Requests</div>
+    </div>
+</div>
+
+<!-- Quick Action Tiles -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Quick Actions</h2>
+    </div>
+    <div class="action-tiles">
+        <a href="{% url 'landlord_financial_dashboard' %}" class="action-tile">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Financial Dashboard</div>
+            <div class="tile-desc">Track income, expenses, net profit</div>
+        </a>
+        <a href="{% url 'reports' %}" class="action-tile tile-blue">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Reports</div>
+            <div class="tile-desc">Financial, occupancy, payments & more</div>
+        </a>
+        <a href="{% url 'building_add' %}" class="action-tile tile-green">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Add Building</div>
+            <div class="tile-desc">Create a new property building</div>
+        </a>
+        <a href="{% url 'house_add' %}" class="action-tile">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Add House</div>
+            <div class="tile-desc">Register a new unit</div>
+        </a>
+        <a href="{% url 'tenant_add' %}" class="action-tile tile-blue">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Add Tenant</div>
+            <div class="tile-desc">Onboard a new tenant</div>
+        </a>
+        <a href="{% url 'rent_charge_bulk_create' %}" class="action-tile tile-amber">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Bulk Charges</div>
+            <div class="tile-desc">Create charges for all tenants</div>
+        </a>
+        <a href="{% url 'payment_add' %}" class="action-tile tile-green">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Record Payment</div>
+            <div class="tile-desc">Log a payment received</div>
+        </a>
+        <a href="{% url 'payment_request_list' %}" class="action-tile">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Payment Requests</div>
+            <div class="tile-desc">Review tenant requests</div>
+        </a>
+        <a href="{% url 'issue_list' %}" class="action-tile tile-red">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Maintenance</div>
+            <div class="tile-desc">Manage repair requests</div>
+        </a>
+        <a href="{% url 'send_rent_reminders' %}" class="action-tile tile-blue">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Send Reminders</div>
+            <div class="tile-desc">SMS overdue notifications</div>
+        </a>
+        <a href="{% url 'expense_list' %}" class="action-tile tile-amber">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Expenses</div>
+            <div class="tile-desc">Track property expenses</div>
+        </a>
+        <a href="{% url 'worker_register' %}" class="action-tile">
+            <div class="tile-icon"></div>
+            <div class="tile-label">Hire Workers</div>
+            <div class="tile-desc">Add maintenance staff</div>
+        </a>
+    </div>
+</div>
+
+<!-- Help Button + Modal -->
+<div class="no-print" style="text-align:right; margin: -1rem 0 1.5rem;">
     <button type="button" class="btn-help" onclick="document.getElementById('helpModal').style.display='flex'">
          How It Works
     </button>
 </div>
-
-<!-- Help Modal -->
 <div id="helpModal" class="help-modal" onclick="if(event.target===this)this.style.display='none'">
     <div class="help-modal-content">
         <div class="help-modal-header">
-            <h3> About Dashboard</h3>
+            <h3>About the Dashboard</h3>
             <button onclick="document.getElementById('helpModal').style.display='none'" class="help-modal-close">&times;</button>
         </div>
         <div class="help-modal-body">
             <p><strong>What is this page?</strong></p>
-            <p>The Dashboard gives you a quick overview of your entire property management portfolio at a glance.</p>
-            
-            <p style="margin-top: 1rem;"><strong>What you'll see:</strong></p>
+            <p>Your dashboard gives you a real-time overview of your entire property portfolio at a glance.</p>
+
+            <p style="margin-top: 1rem;"><strong>What you'll find:</strong></p>
             <ul>
-                <li><strong>Stats Overview:</strong> Total buildings, houses, occupancy, and tenant count</li>
-                <li><strong>Quick Actions:</strong> Fast access to add buildings, houses, tenants, and payments</li>
-                <li><strong>Buildings Table:</strong> Overview of all your buildings with occupancy status</li>
-                <li><strong>Recent Payments:</strong> Last 5 payments received</li>
-                <li><strong>Unpaid Charges:</strong> Outstanding rent balances requiring attention</li>
+                <li><strong>Stat Cards:</strong> Buildings, houses, occupancy and tenant counts</li>
+                <li><strong>Quick Actions:</strong> One-click access to common workflows</li>
+                <li><strong>Reports:</strong> Generate, filter, export, and print financial & operational reports</li>
+                <li><strong>Recent Activity:</strong> Payments, payment requests, issues, charges</li>
             </ul>
-            
+
             <p style="margin-top: 1rem;"><strong>Getting Started:</strong></p>
             <ol>
                 <li>Add a building first</li>
@@ -42,79 +185,13 @@
     </div>
 </div>
 
-<!-- Stats Grid -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-value">{{ buildings.count }}</div>
-        <div class="stat-label">Total Buildings</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ total_houses }}</div>
-        <div class="stat-label">Total Houses</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ occupied_houses }}</div>
-        <div class="stat-label">Occupied Houses</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ vacant_houses }}</div>
-        <div class="stat-label">Vacant Houses</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ active_tenants }}</div>
-        <div class="stat-label">Active Tenants</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ percent_occupied }}%</div>
-        <div class="stat-label">Occupancy Rate</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value" style="{% if pending_issues %}color: var(--primary); background: none; -webkit-text-fill-color: var(--primary);{% endif %}">
-            {{ pending_issues }}
-        </div>
-        <div class="stat-label">Pending Issues</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ in_progress_issues }}</div>
-        <div class="stat-label">In Progress</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ resolved_issues }}</div>
-        <div class="stat-label">Resolved Issues</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value" style="{% if pending_payment_requests %}color: var(--primary); background: none; -webkit-text-fill-color: var(--primary);{% endif %}">
-            {{ pending_payment_requests }}
-        </div>
-        <div class="stat-label">Payment Requests</div>
-    </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Quick Actions</h2>
-    </div>
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <a href="{% url 'landlord_financial_dashboard' %}" class="btn btn-primary"> Financial Dashboard</a>
-        <a href="{% url 'building_add' %}" class="btn btn-primary"> Add Building</a>
-        <a href="{% url 'house_add' %}" class="btn btn-secondary"> Add House</a>
-        <a href="{% url 'tenant_add' %}" class="btn btn-secondary"> Add Tenant</a>
-        <a href="{% url 'rent_charge_bulk_create' %}" class="btn btn-secondary" style="border-color: var(--primary); color: var(--primary);"> Bulk Create Charges</a>
-        <a href="{% url 'payment_add' %}" class="btn btn-secondary"> Record Payment</a>
-        <a href="{% url 'payment_request_list' %}" class="btn btn-secondary"> Payment Requests</a>
-        <a href="{% url 'issue_list' %}" class="btn btn-secondary"> Maintenance Reports</a>
-        <a href="{% url 'send_rent_reminders' %}" class="btn btn-secondary" style="border-color: var(--blue); color: var(--blue);"> Send Reminders</a>
-    </div>
-</div>
-
 <!-- Buildings Overview -->
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">Your Buildings</h2>
         <a href="{% url 'building_list' %}" class="btn btn-secondary btn-sm">View All</a>
     </div>
-    
+
     {% if buildings %}
     <div class="table-container">
         <table>
@@ -131,15 +208,15 @@
             <tbody>
                 {% for building in buildings %}
                 <tr>
-                    <td style="color: var(--text-primary); font-weight: 500;">{{ building.building_name }}</td>
+                    <td style="color: var(--text); font-weight: 600;">{{ building.building_name }}</td>
                     <td>{{ building.address }}</td>
                     <td>{{ building.number_of_houses }}</td>
                     <td><span class="badge badge-success">{{ building.how_many_occupied }}</span></td>
                     <td><span class="badge badge-warning">{{ building.vacant_houses }}</span></td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'building_detail' building.pk %}" class="btn-icon" title="View">👁</a>
-                            <a href="{% url 'building_edit' building.pk %}" class="btn-icon" title="Edit">✏️</a>
+                            <a href="{% url 'building_detail' building.pk %}" class="btn-icon" title="View"></a>
+                            <a href="{% url 'building_edit' building.pk %}" class="btn-icon" title="Edit"></a>
                         </div>
                     </td>
                 </tr>
@@ -149,9 +226,10 @@
     </div>
     {% else %}
     <div class="empty-state">
+        <div class="empty-state-icon"></div>
         <h3>No buildings yet</h3>
         <p>Get started by adding your first building</p>
-        <a href="{% url 'building_add' %}" class="btn btn-primary" style="margin-top: 1rem;">+ Add Building</a>
+        <a href="{% url 'building_add' %}" class="btn btn-primary">+ Add Building</a>
     </div>
     {% endif %}
 </div>
@@ -159,7 +237,7 @@
 <!-- Maintenance Reports -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Maintenance Reports</h2>
+        <h2 class="card-title"> Maintenance Reports</h2>
         <a href="{% url 'issue_list' %}" class="btn btn-secondary btn-sm">View All</a>
     </div>
 
@@ -179,7 +257,7 @@
             <tbody>
                 {% for issue in recent_issues %}
                 <tr>
-                    <td style="color: var(--text-primary); font-weight: 500;">{{ issue.title }}</td>
+                    <td style="color: var(--text); font-weight: 600;">{{ issue.title }}</td>
                     <td>
                         <a href="{% url 'tenant_detail' issue.tenant.pk %}" style="color: var(--primary); text-decoration: none;">
                             {{ issue.tenant.full_name }}
@@ -190,9 +268,7 @@
                         <a href="{% url 'house_detail' issue.tenant.house.pk %}" style="color: var(--blue); text-decoration: none;">
                             {{ issue.tenant.house.house_number }}
                         </a>
-                        {% else %}
-                        -
-                        {% endif %}
+                        {% else %}-{% endif %}
                     </td>
                     <td>
                         <span class="badge {% if issue.status == 'resolved' or issue.status == 'approved' %}badge-success{% elif issue.status == 'in_progress' %}badge-info{% else %}badge-warning{% endif %}">
@@ -202,8 +278,8 @@
                     <td>{{ issue.created_at|date:"M d, Y" }}</td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'issue_detail' issue.pk %}" class="btn-icon" title="View">V</a>
-                            <a href="{% url 'issue_edit' issue.pk %}" class="btn-icon" title="Update Status">S</a>
+                            <a href="{% url 'issue_detail' issue.pk %}" class="btn-icon" title="View"></a>
+                            <a href="{% url 'issue_edit' issue.pk %}" class="btn-icon" title="Update Status"></a>
                         </div>
                     </td>
                 </tr>
@@ -213,6 +289,7 @@
     </div>
     {% else %}
     <div class="empty-state">
+        <div class="empty-state-icon"></div>
         <h3>No maintenance reports</h3>
         <p>Issues reported by tenants will appear here.</p>
     </div>
@@ -222,7 +299,7 @@
 <!-- Payment Requests -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Tenant Payment Requests</h2>
+        <h2 class="card-title"> Tenant Payment Requests</h2>
         <a href="{% url 'payment_request_list' %}" class="btn btn-secondary btn-sm">View All</a>
     </div>
 
@@ -243,7 +320,7 @@
             <tbody>
                 {% for payment_request in recent_payment_requests %}
                 <tr>
-                    <td style="color: var(--text-primary); font-weight: 500;">{{ payment_request.tenant.full_name }}</td>
+                    <td style="color: var(--text); font-weight: 600;">{{ payment_request.tenant.full_name }}</td>
                     <td style="color: var(--success);">M {{ payment_request.amount }}</td>
                     <td>{{ payment_request.rent_charge.get_month_display }} {{ payment_request.rent_charge.year }}</td>
                     <td>{{ payment_request.get_payment_method_display }}</td>
@@ -255,8 +332,8 @@
                     <td>{{ payment_request.created_at|date:"M d, Y" }}</td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'payment_request_detail' payment_request.pk %}" class="btn-icon" title="View">V</a>
-                            <a href="{% url 'payment_request_edit' payment_request.pk %}" class="btn-icon" title="Update Status">S</a>
+                            <a href="{% url 'payment_request_detail' payment_request.pk %}" class="btn-icon" title="View"></a>
+                            <a href="{% url 'payment_request_edit' payment_request.pk %}" class="btn-icon" title="Update Status"></a>
                         </div>
                     </td>
                 </tr>
@@ -266,6 +343,7 @@
     </div>
     {% else %}
     <div class="empty-state">
+        <div class="empty-state-icon"></div>
         <h3>No payment requests</h3>
         <p>Tenant payment requests will appear here.</p>
     </div>
@@ -275,10 +353,10 @@
 <!-- Recent Payments -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Recent Payments</h2>
+        <h2 class="card-title"> Recent Payments</h2>
         <a href="{% url 'payment_list' %}" class="btn btn-secondary btn-sm">View All</a>
     </div>
-    
+
     {% if recent_payments %}
     <div class="table-container">
         <table>
@@ -294,8 +372,8 @@
             <tbody>
                 {% for payment in recent_payments %}
                 <tr>
-                    <td style="color: var(--text-primary); font-weight: 500;">{{ payment.tenant.full_name }}</td>
-                    <td style="color: var(--accent-green);">M {{ payment.amount }}</td>
+                    <td style="color: var(--text); font-weight: 600;">{{ payment.tenant.full_name }}</td>
+                    <td style="color: var(--success);">M {{ payment.amount }}</td>
                     <td>{{ payment.rent_charge.get_month_display }} {{ payment.rent_charge.year }}</td>
                     <td>{{ payment.get_payment_method_display }}</td>
                     <td>{{ payment.paid_at|date:"M d, Y" }}</td>
@@ -306,6 +384,7 @@
     </div>
     {% else %}
     <div class="empty-state">
+        <div class="empty-state-icon"></div>
         <h3>No payments recorded yet</h3>
         <p>Payments will appear here once recorded</p>
     </div>
@@ -313,12 +392,12 @@
 </div>
 
 <!-- Unpaid Rent Charges -->
-<div class="card">
+    <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Unpaid Rent Charges</h2>
+        <h2 class="card-title"> Unpaid Rent Charges</h2>
         <a href="{% url 'rent_charge_list' %}" class="btn btn-secondary btn-sm">View All</a>
     </div>
-    
+
     {% if unpaid_charges %}
     <div class="table-container">
         <table>
@@ -335,15 +414,15 @@
             <tbody>
                 {% for charge in unpaid_charges %}
                 <tr>
-                    <td style="color: var(--text-primary); font-weight: 500;">{{ charge.tenant.full_name }}</td>
+                    <td style="color: var(--text); font-weight: 600;">{{ charge.tenant.full_name }}</td>
                     <td>{{ charge.get_month_display }} {{ charge.year }}</td>
                     <td>M {{ charge.amount_due }}</td>
-                    <td style="color: var(--accent-green);">M {{ charge.total_paid }}</td>
+                    <td style="color: var(--success);">M {{ charge.total_paid }}</td>
                     <td style="color: var(--danger); font-weight: 600;">M {{ charge.balance }}</td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'rent_charge_detail' charge.pk %}" class="btn-icon" title="View">👁</a>
-                            <a href="{% url 'payment_add' %}" class="btn-icon" title="Record Payment" style="border-color: var(--accent-green); color: var(--accent-green);">💰</a>
+                            <a href="{% url 'rent_charge_detail' charge.pk %}" class="btn-icon" title="View"></a>
+                            <a href="{% url 'payment_add' %}" class="btn-icon" title="Record Payment" style="border-color: var(--success); color: var(--success);"></a>
                         </div>
                     </td>
                 </tr>
@@ -353,9 +432,11 @@
     </div>
     {% else %}
     <div class="empty-state">
+        <div class="empty-state-icon"></div>
         <h3>All rent is paid!</h3>
         <p>No outstanding balances at this time</p>
     </div>
     {% endif %}
 </div>
 {% endblock %}
+

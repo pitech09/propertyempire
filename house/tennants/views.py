@@ -344,7 +344,7 @@ def user_login(request):
     """Login endpoint for regular users"""
     logger.debug(f"User login attempt with data: {request.data}")
     logger.debug(request.data)
-    print("DEBUG LOGIN BODY →", request.data)
+    print("DEBUG LOGIN BODY ", request.data)
 
     username = request.data.get('username')
     password = request.data.get('password')
@@ -397,10 +397,10 @@ def register(request):
             user.is_superuser = False
             user.save()
             
-            # ✅ Automatically log the user in
+            #  Automatically log the user in
             login(request, user)
             
-            # ✅ Redirect into the app (e.g., dashboard)
+            #  Redirect into the app (e.g., dashboard)
             return redirect("dashboard")  # replace "dashboard" with your main app URL name
             
     else:
@@ -881,11 +881,11 @@ def bulk_create_rent_charges(request):
 
         if not month or not year:
             messages.error(request, "Please select month and year.")
-            return redirect("rent_charge_bulk_create")  # ✅ Fixed: use URL name
+            return redirect("rent_charge_bulk_create")  #  Fixed: use URL name
 
         if not tenant_ids:
             messages.warning(request, "No tenants selected.")
-            return redirect("rent_charge_bulk_create")  # ✅ Fixed: use URL name
+            return redirect("rent_charge_bulk_create")  #  Fixed: use URL name
 
         # Convert to integers
         try:
@@ -894,7 +894,7 @@ def bulk_create_rent_charges(request):
             tenant_ids = [int(tid) for tid in tenant_ids]
         except ValueError:
             messages.error(request, "Invalid month, year, or tenant selection.")
-            return redirect("rent_charge_bulk_create")  # ✅ Fixed: use URL name
+            return redirect("rent_charge_bulk_create")  #  Fixed: use URL name
 
         # Create rent charges
         created_count = 0
@@ -938,20 +938,20 @@ def bulk_create_rent_charges(request):
         if created_count > 0:
             messages.success(
                 request, 
-                f"✓ Successfully created {created_count} rent charge(s) for {month_name} {year}"
+                f" Successfully created {created_count} rent charge(s) for {month_name} {year}"
             )
         if skipped_count > 0:
             messages.info(
                 request, 
-                f"⊘ Skipped {skipped_count} - charges already exist"
+                f" Skipped {skipped_count} - charges already exist"
             )
         if error_count > 0:
             messages.error(
                 request, 
-                f"✗ Failed to create {error_count} charge(s)"
+                f" Failed to create {error_count} charge(s)"
             )
         
-        return redirect("rent_charge_bulk_create")  # ✅ Fixed: use URL name
+        return redirect("rent_charge_bulk_create")  #  Fixed: use URL name
 
     context = {
         "current_year": current_year,

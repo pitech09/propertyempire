@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - PropertyEmpire{% endblock %}
+
+{% block extra_head %}
+    {% include "_ux_partial.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Reports & <span>Analytics</span></h1>
+        <p class="section-subtitle" style="margin-top:.4rem;">Generate, filter, and export reports for your portfolio</p>
+    </div>
+    <div style="display:flex; gap:.5rem;" class="no-print">
+        <button type="button" class="btn btn-secondary" onclick="window.print()"> Print</button>
+        <a href="{% url 'export_payments_csv' %}" class="btn btn-primary" data-no-loader> Export Payments CSV</a>
+        <a href="{% url 'export_tenants_csv' %}" class="btn btn-secondary" data-no-loader> Export Tenants CSV</a>
+    </div>
+</div>
+
+<!-- Report meta -->
+<div class="report-meta no-print">
+    <div class="meta-item">
+        <div class="meta-label">Report Period</div>
+        <div class="meta-value">Last {{ months_back }} month{{ months_back|pluralize }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">From</div>
+        <div class="meta-value">{{ start_date|date:"M d, Y" }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">To</div>
+        <div class="meta-value">{{ end_date|date:"M d, Y" }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Buildings</div>
+        <div class="meta-value">{{ buildings_count }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Houses</div>
+        <div class="meta-value">{{ total_houses }}</div>
+    </div>
+</div>
+
+<!-- Filter Bar (period selector) -->
+<div class="filter-bar-card no-print">
+    <form method="get" action="{% url 'reports' %}">
+        <input type="hidden" name="type" value="{{ report_type }}">
+        <div class="form-group">
+            <label class="form-label" for="months">Period</label>
+            <select name="months" id="months" class="form-control" onchange="this.form.submit()">
+                <option value="1"  {% if months_back == 1  %}selected{% endif %}>Last 1 month</option>
+                <option value="3"  {% if months_back == 3  %}selected{% endif %}>Last 3 months</option>
+                <option value="6"  {% if months_back == 6  %}selected{% endif %}>Last 6 months</option>
+                <option value="12" {% if months_back == 12 %}selected{% endif %}>Last 12 months</option>
+                <option value="24" {% if months_back == 24 %}selected{% endif %}>Last 24 months</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Apply</button>
+    </form>
+</div>
+
+<!-- Tab bar -->
+<div class="tab-bar no-print">
+    <button data-tab="financial"  class="{% if report_type == 'financial'  %}active{% endif %}"> Financial</button>
+    <button data-tab="occupancy"  class="{% if report_type == 'occupancy'  %}active{% endif %}"> Occupancy</button>
+    <button data-tab="payment"    class="{% if report_type == 'payment'    %}active{% endif %}"> Payment</button>
+    <button data-tab="maintenance" class="{% if report_type == 'maintenance' %}active{% endif %}"> Maintenance</button>
+    <button data-tab="tenant"     class="{% if report_type == 'tenant'     %}active{% endif %}"> Tenants</button>
+</div>
+
+<!-- =========== FINANCIAL =========== -->
+<div class="tab-panel {% if report_type == 'financial' %}active{% endif %}" data-panel="financial">
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <div class="kpi-label">Total Collected</div>
+            <div class="kpi-value success">M {{ financials.total_collected|floatformat:2 }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Total Billed</div>
+            <div class="kpi-value info">M {{ financials.total_billed|floatformat:2 }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value danger">M {{ financials.total_outstanding|floatformat:2 }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Collection Rate</div>
+            <div class="kpi-value">{{ financials.collection_rate }}%</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Net Income</div>
+            <div class="kpi-value success">M {{ financials.net_income|floatformat:2 }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Expenses</div>
+            <div class="kpi-value">M {{ financials.total_expenses|floatformat:2 }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Deposits Held</div>
+            <div class="kpi-value info">M {{ financials.total_deposits_held|floatformat:2 }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Platform Fee</div>
+            <div class="kpi-value">M {{ financials.platform_fee|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Recent Payments</h2>
+            <a href="{% url 'payment_list' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        {% if payments %}
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Date</th><th>Tenant</th><th>Period</th><th>Amount</th><th>Method</th></tr></thead>
+                <tbody>
+                {% for p in payments %}
+                <tr>
+                    <td>{{ p.paid_at|date:"M d, Y" }}</td>
+                    <td>{{ p.tenant.full_name }}</td>
+                    <td>{{ p.rent_charge.get_month_display }} {{ p.rent_charge.year }}</td>
+                    <td style="color: var(--success);">M {{ p.amount }}</td>
+                    <td>{{ p.get_payment_method_display }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><h3>No payments in this period</h3></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- =========== OCCUPANCY =========== -->
+<div class="tab-panel {% if report_type == 'occupancy' %}active{% endif %}" data-panel="occupancy">
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <div class="kpi-label">Total Houses</div>
+            <div class="kpi-value">{{ total_houses }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Occupied</div>
+            <div class="kpi-value success">{{ occupied_houses }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Vacant</div>
+            <div class="kpi-value danger">{{ vacant_houses }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Occupancy Rate</div>
+            <div class="kpi-value info">{{ occupancy_pct }}%</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Buildings Breakdown</h2>
+            <a href="{% url 'building_list' %}" class="btn btn-secondary btn-sm">Manage Buildings</a>
+        </div>
+        {% if buildings %}
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Building</th><th>Address</th><th>Total</th><th>Occupied</th><th>Vacant</th><th>Rate</th></tr></thead>
+                <tbody>
+                {% for b in buildings %}
+                <tr>
+                    <td style="color: var(--text); font-weight:600;">{{ b.building_name }}</td>
+                    <td>{{ b.address }}</td>
+                    <td>{{ b.number_of_houses }}</td>
+                    <td><span class="badge badge-success">{{ b.how_many_occupied }}</span></td>
+                    <td><span class="badge badge-warning">{{ b.vacant_houses }}</span></td>
+                    <td>
+                        {% if b.number_of_houses %}
+                            {{ b.occupancy_pct|default:b.how_many_occupied|add:0 }}%
+                        {% else %}0%{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><h3>No buildings yet</h3></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- =========== PAYMENT =========== -->
+<div class="tab-panel {% if report_type == 'payment' %}active{% endif %}" data-panel="payment">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Monthly Payments ({{ months_back }} months)</h2>
+            <a href="{% url 'export_payments_csv' %}" class="btn btn-secondary btn-sm no-print" data-no-loader> CSV</a>
+        </div>
+        {% if monthly_payments %}
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Month</th><th>Payments Count</th><th>Total Collected</th></tr></thead>
+                <tbody>
+                {% for row in monthly_payments %}
+                <tr>
+                    <td>{{ row.month|date:"M Y" }}</td>
+                    <td>{{ row.count }}</td>
+                    <td style="color: var(--success);">M {{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><h3>No payment data in this period</h3></div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">All Payments (last 50)</h2>
+        </div>
+        {% if payments %}
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Date</th><th>Tenant</th><th>House</th><th>Amount</th><th>Method</th><th>Ref</th></tr></thead>
+                <tbody>
+                {% for p in payments %}
+                <tr>
+                    <td>{{ p.paid_at|date:"M d, Y H:i" }}</td>
+                    <td>{{ p.tenant.full_name }}</td>
+                    <td>{{ p.tenant.house.house_number|default:"-" }}</td>
+                    <td style="color: var(--success);">M {{ p.amount }}</td>
+                    <td>{{ p.get_payment_method_display }}</td>
+                    <td>{{ p.payment_reference|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><h3>No payments</h3></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- =========== MAINTENANCE =========== -->
+<div class="tab-panel {% if report_type == 'maintenance' %}active{% endif %}" data-panel="maintenance">
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <div class="kpi-label">Pending</div>
+            <div class="kpi-value warning">{{ issues_pending }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">In Progress</div>
+            <div class="kpi-value info">{{ issues_inprogress }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Approved</div>
+            <div class="kpi-value">{{ issues_approved }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Resolved</div>
+            <div class="kpi-value success">{{ issues_resolved }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Recent Issues</h2>
+            <a href="{% url 'issue_list' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        {% if recent_issues %}
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Title</th><th>Tenant</th><th>House</th><th>Status</th><th>Reported</th></tr></thead>
+                <tbody>
+                {% for issue in recent_issues %}
+                <tr>
+                    <td style="color: var(--text); font-weight:600;">{{ issue.title }}</td>
+                    <td>{{ issue.tenant.full_name }}</td>
+                    <td>{{ issue.tenant.house.house_number|default:"-" }}</td>
+                    <td>
+                        <span class="badge
+                            {% if issue.status == 'resolved' or issue.status == 'approved' %}badge-success
+                            {% elif issue.status == 'in_progress' %}badge-info
+                            {% else %}badge-warning{% endif %}">
+                            {{ issue.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ issue.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><h3>No maintenance issues</h3></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- =========== TENANTS =========== -->
+<div class="tab-panel {% if report_type == 'tenant' %}active{% endif %}" data-panel="tenant">
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <div class="kpi-label">Active Tenants</div>
+            <div class="kpi-value success">{{ tenants_active_count }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Inactive Tenants</div>
+            <div class="kpi-value">{{ tenants_inactive_count }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Tenants with Balance</div>
+            <div class="kpi-value danger">{{ tenants_with_balance|length }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Top Outstanding Balances</h2>
+            <a href="{% url 'tenant_list' %}" class="btn btn-secondary btn-sm">View All Tenants</a>
+        </div>
+        {% if tenants_with_balance %}
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Tenant</th><th>House</th><th>Phone</th><th>Outstanding Balance</th></tr></thead>
+                <tbody>
+                {% for row in tenants_with_balance %}
+                <tr>
+                    <td style="color: var(--text); font-weight:600;">{{ row.tenant.full_name }}</td>
+                    <td>{{ row.tenant.house.house_number|default:"-" }}</td>
+                    <td>{{ row.tenant.phone|default:"-" }}</td>
+                    <td style="color: var(--danger); font-weight:700;">M {{ row.balance|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><h3>All tenants are paid up! </h3><p>No outstanding balances right now.</p></div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

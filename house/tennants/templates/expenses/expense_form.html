@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">{% if expense %}Edit <span>Expense</span>{% else %}Record <span>Expense</span>{% endif %}</h1>
-    <a href="{% url 'expense_list' %}" class="btn btn-secondary">← Back</a>
+    <a href="{% url 'expense_list' %}" class="btn btn-secondary"> Back</a>
 </div>
 <div class="card">
     <form method="post" enctype="multipart/form-data">

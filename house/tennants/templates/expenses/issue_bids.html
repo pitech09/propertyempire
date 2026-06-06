@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Bids for: <span>{{ issue.title }}</span></h1>
-    <a href="{% url 'issue_list' %}" class="btn btn-secondary">← Back to Issues</a>
+    <a href="{% url 'issue_list' %}" class="btn btn-secondary"> Back to Issues</a>
 </div>
 
 <div class="card">
@@ -89,7 +89,7 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <div class="empty-state-icon">🔨</div>
+        <div class="empty-state-icon"></div>
         <h3>No bids yet</h3>
         <p>Workers will place bids on this issue. Check back later.</p>
     </div>

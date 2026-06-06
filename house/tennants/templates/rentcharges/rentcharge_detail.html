@@ -117,7 +117,7 @@
                     </td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'payment_detail' payment.pk %}" class="btn-icon" title="View">👁</a>
+                            <a href="{% url 'payment_detail' payment.pk %}" class="btn-icon" title="View"></a>
                         </div>
                     </td>
                 </tr>
@@ -129,7 +129,7 @@
     <div class="empty-state">
         <h3>No payments yet</h3>
         <p>Record a payment for this rent charge</p>
-        <a href="{% url 'payment_add' %}" class="btn btn-primary" style="margin-top: 1rem;">💰 Record Payment</a>
+        <a href="{% url 'payment_add' %}" class="btn btn-primary" style="margin-top: 1rem;"> Record Payment</a>
     </div>
     {% endif %}
 </div>

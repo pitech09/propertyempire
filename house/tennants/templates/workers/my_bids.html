@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">My <span>Bids</span></h1>
-    <a href="{% url 'worker_dashboard' %}" class="btn btn-secondary">← Dashboard</a>
+    <a href="{% url 'worker_dashboard' %}" class="btn btn-secondary"> Dashboard</a>
 </div>
 <div class="card">
     <div class="card-header"><h2 class="card-title">All My Bids ({{ bids|length }})</h2></div>
@@ -45,7 +45,7 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-icon"></div>
         <h3>No bids yet</h3>
         <p>Browse open jobs and place your first bid!</p>
         <a href="{% url 'worker_dashboard' %}" class="btn btn-primary">Browse Jobs</a>

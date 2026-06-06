@@ -22,7 +22,7 @@ class Conflict:
     def __str__(self) -> str:  # pragma: no cover
         return (
             f"Conflict with {self.booking.booking_reference} "
-            f"({self.overlap_start} → {self.overlap_end})"
+            f"({self.overlap_start}  {self.overlap_end})"
         )
 
 

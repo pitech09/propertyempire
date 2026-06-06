@@ -57,8 +57,8 @@
                     <td style="color: var(--danger); font-weight: 600;">M{{ expense.amount|floatformat:2 }}</td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{% url 'expense_edit' expense.pk %}" class="btn-icon" title="Edit">✏️</a>
-                            <a href="{% url 'expense_delete' expense.pk %}" class="btn-icon danger" title="Delete">🗑</a>
+                            <a href="{% url 'expense_edit' expense.pk %}" class="btn-icon" title="Edit"></a>
+                            <a href="{% url 'expense_delete' expense.pk %}" class="btn-icon danger" title="Delete"></a>
                         </div>
                     </td>
                 </tr>
@@ -68,7 +68,7 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <div class="empty-state-icon">📊</div>
+        <div class="empty-state-icon"></div>
         <h3>No expenses recorded</h3>
         <p>Track property expenses like maintenance, utilities, and taxes.</p>
         <a href="{% url 'expense_add' %}" class="btn btn-primary">+ Add First Expense</a>

@@ -109,7 +109,7 @@
 <!-- Overdue Payments Alert -->
 {% if overdue_payments %}
 <div class="alert alert-warning">
-    <strong>⚠️ Overdue Payments:</strong> This tenant has {{ overdue_payments.count }} overdue payment(s) totaling 
+    <strong> Overdue Payments:</strong> This tenant has {{ overdue_payments.count }} overdue payment(s) totaling 
     M {% for p in overdue_payments %}{{ p.balance }}{% if not forloop.last %} + {% endif %}{% endfor %}
 </div>
 {% endif %}

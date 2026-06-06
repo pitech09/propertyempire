@@ -10,7 +10,10 @@
     {% load static %}
     <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
 
+    {% block extra_head %}{% endblock %}
+
     <style>
+
         /* Dark Theme (default) */
         :root {
             --primary: #dcf11c;
@@ -583,7 +586,7 @@
         }
 
         .alert-success::before {
-            content: '✓';
+            content: '';
         }
 
         .alert-error {
@@ -593,7 +596,7 @@
         }
 
         .alert-error::before {
-            content: '✕';
+            content: '';
         }
 
         .alert-warning {
@@ -603,7 +606,7 @@
         }
 
         .alert-warning::before {
-            content: '⚠';
+            content: '';
         }
 
         /* Badges */
