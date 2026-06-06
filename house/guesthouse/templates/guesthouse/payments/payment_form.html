@@ -5,7 +5,7 @@
 <div class="gh-page-header"><h1 class="gh-page-title">Record Payment</h1></div>
 <div class="row"><div class="col-lg-6">
     <div class="gh-card"><div class="gh-card-body">
-        {% if booking %}<div class="mb-3 p-3 bg-light rounded"><strong>Booking:</strong> {{ booking.booking_reference }} | <strong>Guest:</strong> {{ booking.guest.full_name }} | <strong>Balance:</strong> <span class="text-danger">{{ booking.balance }}</span></div>{% endif %}
+        {% if booking %}<div class="mb-3 p-3 rounded"><strong>Booking:</strong> {{ booking.booking_reference }} | <strong>Guest:</strong> {{ booking.guest.full_name }} | <strong>Balance:</strong> <span class="text-danger">{{ booking.balance }}</span></div>{% endif %}
         <form method="post">{% csrf_token %}
             <div class="row g-3">
                 {% if not booking %}<div class="col-12">{% include "guesthouse/partials/_field.html" with field=form.booking %}</div>{% endif %}
