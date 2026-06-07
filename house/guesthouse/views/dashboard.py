@@ -15,8 +15,38 @@ from guesthouse.models import (
     Room,
     RoomMaintenance,
 )
+from guesthouse.services.financials import (
+    compute_platform_costs,
+    monthly_subscription,
+    period_revenue,
+    platform_transaction_fee_rate,
+)
 from guesthouse.services.reporting import ReportingService
 from guesthouse.views._common import render_gh, role_required
+
+
+def _to_chart_points(rows, *, value_key: str, label_fmt: str = "%b %d") -> list:
+    """Normalize reporting service rows to {label, value} for Chart.js."""
+    import datetime as _dt
+
+    points = []
+    for row in rows:
+        d = row.get("date")
+        if isinstance(d, str):
+            try:
+                d = _dt.date.fromisoformat(d)
+            except ValueError:
+                pass
+        if isinstance(d, _dt.date):
+            label = d.strftime(label_fmt)
+        else:
+            label = str(d) if d is not None else ""
+        try:
+            value = float(row.get(value_key) or 0)
+        except (TypeError, ValueError):
+            value = 0.0
+        points.append({"label": label, "value": round(value, 2)})
+    return points
 
 
 @role_required()
@@ -28,20 +58,36 @@ def dashboard(request):
 
     # ---- Last 14 days occupancy for sparkline ----
     start_occ = today - timezone.timedelta(days=13)
-    occupancy_data = ReportingService.occupancy_for_range(start_occ, today)
+    occupancy_data = _to_chart_points(
+        ReportingService.occupancy_for_range(start_occ, today),
+        value_key="occupancy_pct",
+    )
 
     # ---- Last 14 days revenue ----
-    revenue_data = ReportingService.revenue_by_day(start_occ, today)
+    revenue_data = _to_chart_points(
+        ReportingService.revenue_by_day(start_occ, today),
+        value_key="revenue",
+    )
 
     # ---- Top booking sources (last 30 days) ----
-    rev_sources = ReportingService.revenue_by_source(
+    rev_sources_rows = ReportingService.revenue_by_source(
         today - timezone.timedelta(days=30), today
     )
+    rev_sources = {
+        row.get("label") or row.get("source") or "Other": float(
+            row.get("revenue") or 0
+        )
+        for row in rev_sources_rows
+    }
 
     # ---- Room type performance (last 30 days) ----
-    rev_room_types = ReportingService.revenue_by_room_type(
+    rev_room_types_rows = ReportingService.revenue_by_room_type(
         today - timezone.timedelta(days=30), today
     )
+    rev_room_types = {
+        row.get("room_type") or "Unspecified": float(row.get("revenue") or 0)
+        for row in rev_room_types_rows
+    }
 
     # ---- Financial summaries (month-to-date) ----
     mtd_revenue_qs = GuestPayment.objects.filter(
@@ -50,6 +96,34 @@ def dashboard(request):
     )
     mtd_revenue = mtd_revenue_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
     mtd_payment_count = mtd_revenue_qs.count()
+
+    # ---- All-time revenue + platform cost breakdown ----
+    total_revenue_qs = GuestPayment.objects.all()
+    total_revenue = (
+        total_revenue_qs.aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+
+    # MTD and all-time platform-cost calculations
+    mtd_platform = compute_platform_costs(mtd_revenue)
+    total_platform = compute_platform_costs(total_revenue)
+    # Count active months for MTD subscription (1, 2, ... up to current month)
+    months_active = (today.year - month_start.year) * 12 + (
+        today.month - month_start.month + 1
+    )
+    if months_active < 1:
+        months_active = 1
+    mtd_subscription = (
+        Decimal(months_active) * monthly_subscription()
+    ).quantize(Decimal("0.01"))
+    # For the all-time snapshot we charge a single monthly sub (current month)
+    total_subscription = monthly_subscription()
+    mtd_net = (
+        mtd_revenue - mtd_platform["platform_fee"] - mtd_subscription
+    ).quantize(Decimal("0.01"))
+    total_net = (
+        total_revenue - total_platform["platform_fee"] - total_subscription
+    ).quantize(Decimal("0.01"))
 
     # Outstanding balances across all non-cancelled bookings
     active_bookings = Booking.objects.exclude(
@@ -103,6 +177,16 @@ def dashboard(request):
         status=RoomMaintenance.STATUS_RESOLVED
     ).count()
 
+    # ---- Detect "no data" state so the dashboard prompts setup ----
+    no_data_reasons = []
+    if Room.objects.count() == 0:
+        no_data_reasons.append("No rooms yet")
+    if not rev_sources:
+        no_data_reasons.append("No bookings in the last 30 days")
+    if mtd_payment_count == 0:
+        no_data_reasons.append("No payments this month")
+    no_data_mode = len(no_data_reasons) >= 2
+
     context = {
         "metrics": metrics,
         "occupancy_data": json.dumps(occupancy_data),
@@ -117,11 +201,24 @@ def dashboard(request):
         "adr": adr,
         "revpar": revpar,
         "projected_30d": projected_30d,
+        # Platform / owner costs (mirrors landlord dashboard)
+        "total_revenue": total_revenue,
+        "transaction_fee_rate": platform_transaction_fee_rate(),
+        "mtd_platform_fee": mtd_platform["platform_fee"],
+        "total_platform_fee": total_platform["platform_fee"],
+        "mtd_subscription": mtd_subscription,
+        "monthly_subscription": total_subscription,
+        "mtd_net_after_fees": mtd_net,
+        "total_net_after_fees": total_net,
+        "months_active": months_active,
         # Quick action counts
         "pending_payments": pending_payments,
         "unpaid_balance_count": unpaid_balance_count,
         "pending_housekeeping": pending_housekeeping,
         "pending_maintenance": pending_maintenance,
+        # Empty-state hints
+        "no_data_mode": no_data_mode,
+        "no_data_reasons": no_data_reasons,
         "active_nav": "dashboard",
     }
     return render_gh(request, "guesthouse/dashboard.html", context)

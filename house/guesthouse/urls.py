@@ -16,12 +16,16 @@ from guesthouse.views import (
     room_types,
     rooms,
 )
+from guesthouse.views.logout import logout_view
 
 app_name = "guesthouse"
 
 urlpatterns = [
     # ----- Dashboard -----
     path("", dashboard.dashboard, name="dashboard"),
+
+    # ----- Logout -----
+    path("logout/", logout_view, name="logout"),
 
     # ----- Rooms -----
     path("rooms/", rooms.room_list, name="room_list"),

@@ -18,35 +18,35 @@
         <div class="gh-quick-links">
             <a href="{% url 'guesthouse:reception_search' %}" class="gh-quick-link">
                 <div class="gh-quick-link-icon"><i class="bi bi-box-arrow-in-right"></i></div>
-                <div class="gh-quick-link-label">Check In / Out</div>
+                <div class="gh-quick-link-label" style="color: black;">Check In / Out</div>
             </a>
             <a href="{% url 'guesthouse:walk_in' %}" class="gh-quick-link">
                 <div class="gh-quick-link-icon"><i class="bi bi-person-plus"></i></div>
-                <div class="gh-quick-link-label">New Walk-In</div>
+                <div class="gh-quick-link-label" style="color: black;">New Walk-In</div>
             </a>
             <a href="{% url 'guesthouse:booking_create' %}" class="gh-quick-link">
                 <div class="gh-quick-link-icon"><i class="bi bi-calendar-plus"></i></div>
-                <div class="gh-quick-link-label">New Booking</div>
+                <div class="gh-quick-link-label" style="color: black;">New Booking</div>
             </a>
             <a href="{% url 'guesthouse:guest_create' %}" class="gh-quick-link">
                 <div class="gh-quick-link-icon"><i class="bi bi-person-plus-fill"></i></div>
-                <div class="gh-quick-link-label">Add Guest</div>
+                <div class="gh-quick-link-label" style="color: black;">Add Guest</div>
             </a>
             <a href="{% url 'guesthouse:payment_list' %}" class="gh-quick-link">
                 <div class="gh-quick-link-icon"><i class="bi bi-credit-card"></i></div>
-                <div class="gh-quick-link-label">Payments</div>
+                <div class="gh-quick-link-label" style="color: black;">Payments</div>
             </a>
             <a href="{% url 'guesthouse:task_list' %}" class="gh-quick-link">
                 <div class="gh-quick-link-icon"><i class="bi bi-broom"></i></div>
-                <div class="gh-quick-link-label">Housekeeping</div>
+                <div class="gh-quick-link-label" style="color: black;">Housekeeping</div>
             </a>
             <a href="{% url 'guesthouse:maintenance_list' %}" class="gh-quick-link">
                 <div class="gh-quick-link-icon"><i class="bi bi-tools"></i></div>
-                <div class="gh-quick-link-label">Maintenance</div>
+                <div class="gh-quick-link-label" style="color: black;">Maintenance</div>
             </a>
             <a href="{% url 'guesthouse:report_index' %}" class="gh-quick-link">
                 <div class="gh-quick-link-icon"><i class="bi bi-graph-up"></i></div>
-                <div class="gh-quick-link-label">Reports</div>
+                <div class="gh-quick-link-label" style="color: black;">Reports</div>
             </a>
         </div>
     </div>
@@ -104,6 +104,87 @@
         </div>
     </div>
 </div>
+
+<!-- ============== PLATFORM COSTS (OWNER SHARE) ============== -->
+<div class="gh-card">
+    <div class="gh-card-header">
+        <h5 class="gh-card-title">Platform Costs (Owner Share)</h5>
+        <small class="text-muted">Mirrors the landlord app: 1% transaction fee + M 200/month subscription</small>
+    </div>
+    <div class="gh-card-body">
+        <div class="gh-stats">
+            <div class="gh-stat gh-stat-info">
+                <div class="gh-stat-value">M{{ total_revenue|floatformat:2 }}</div>
+                <div class="gh-stat-label">Total Revenue Collected</div>
+            </div>
+            <div class="gh-stat gh-stat-warning">
+                <div class="gh-stat-value">M{{ total_platform_fee|floatformat:2 }}</div>
+                <div class="gh-stat-label">Transaction Fees ({{ transaction_fee_rate|floatformat:2 }}%)</div>
+            </div>
+            <div class="gh-stat gh-stat-warning">
+                <div class="gh-stat-value">M{{ monthly_subscription|floatformat:2 }}</div>
+                <div class="gh-stat-label">Monthly Subscription</div>
+            </div>
+            <div class="gh-stat {% if total_net_after_fees >= 0 %}gh-stat-success{% else %}gh-stat-warning{% endif %}">
+                <div class="gh-stat-value">M{{ total_net_after_fees|floatformat:2 }}</div>
+                <div class="gh-stat-label">Net After All Fees</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============== MONTH-TO-DATE PLATFORM COSTS ============== -->
+<div class="gh-card">
+    <div class="gh-card-header">
+        <h5 class="gh-card-title">Month-to-Date Platform Costs</h5>
+        <small class="text-muted">{{ months_active }} active month{{ months_active|pluralize }} this period</small>
+    </div>
+    <div class="gh-card-body">
+        <div class="gh-stats">
+            <div class="gh-stat">
+                <div class="gh-stat-value">M{{ mtd_revenue|floatformat:2 }}</div>
+                <div class="gh-stat-label">MTD Revenue</div>
+            </div>
+            <div class="gh-stat gh-stat-warning">
+                <div class="gh-stat-value">M{{ mtd_platform_fee|floatformat:2 }}</div>
+                <div class="gh-stat-label">MTD Transaction Fee (1%)</div>
+            </div>
+            <div class="gh-stat gh-stat-warning">
+                <div class="gh-stat-value">M{{ mtd_subscription|floatformat:2 }}</div>
+                <div class="gh-stat-label">MTD Subscription ({{ months_active }} × M{{ monthly_subscription|floatformat:2 }})</div>
+            </div>
+            <div class="gh-stat {% if mtd_net_after_fees >= 0 %}gh-stat-success{% else %}gh-stat-warning{% endif %}">
+                <div class="gh-stat-value">M{{ mtd_net_after_fees|floatformat:2 }}</div>
+                <div class="gh-stat-label">MTD Net After Fees</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============== NO DATA PLACEHOLDER ============== -->
+{% if no_data_mode %}
+<div class="gh-card">
+    <div class="gh-card-body" style="text-align:center; padding:2.5rem 1rem;">
+        <i class="bi bi-graph-up" style="font-size:3rem; color:#9ca3af;"></i>
+        <h4 style="margin-top:1rem;">No guesthouse data yet</h4>
+        <p style="color:#6b7280;">
+            {% if no_data_reasons %}
+                {% for reason in no_data_reasons %}
+                    <span class="gh-badge" style="margin:0 .25rem;">{{ reason }}</span>
+                {% endfor %}
+            {% else %}
+                Add a room, then create a booking to start populating the dashboard.
+            {% endif %}
+        </p>
+        <div style="margin-top:1rem;">
+            <a href="{% url 'guesthouse:room_create' %}" class="gh-btn gh-btn-primary"><i class="bi bi-door-open"></i> Add Room</a>
+            <a href="{% url 'guesthouse:room_type_create' %}" class="gh-btn gh-btn-outline"><i class="bi bi-tags"></i> Add Room Type</a>
+            <a href="{% url 'guesthouse:booking_create' %}" class="gh-btn gh-btn-outline"><i class="bi bi-calendar-plus"></i> Create Booking</a>
+            <a href="{% url 'guesthouse:guest_create' %}" class="gh-btn gh-btn-outline"><i class="bi bi-person-plus"></i> Add Guest</a>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="row g-3">
     <div class="col-md-8">

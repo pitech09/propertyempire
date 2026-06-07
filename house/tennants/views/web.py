@@ -497,6 +497,20 @@ def owner_dashboard(request):
     occupied_houses = House.objects.filter(occupation=True).count()
     occupancy_rate = round((occupied_houses / total_houses) * 100, 2) if total_houses else 0
 
+    # --- Guesthouse financials (separate ledger from rentals) ---
+    from guesthouse.models import GuestPayment
+    from guesthouse.services.financials import compute_platform_costs
+
+    guesthouse_revenue = (
+        GuestPayment.objects.aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+    guesthouse_breakdown = compute_platform_costs(
+        guesthouse_revenue, include_monthly_subscription=False
+    )
+    guesthouse_platform_fee = guesthouse_breakdown["platform_fee"]
+    guesthouse_payment_count = GuestPayment.objects.count()
+
     context = {
         "landlord_rows": landlord_rows,
         "landlord_count": landlords.count(),
@@ -513,11 +527,21 @@ def owner_dashboard(request):
         "maintenance_report_count": Issue.objects.count(),
         "pending_maintenance_count": Issue.objects.filter(status="pending").count(),
         "approved_maintenance_count": Issue.objects.filter(status="approved").count(),
+        # Rental (houses) totals
         "total_collected": total_collected,
         "total_outstanding": total_outstanding,
-        "platform_transaction_revenue": platform_transaction_revenue,
+        # Rental platform revenue split
+        "rental_transaction_revenue": platform_transaction_revenue,
         "subscription_revenue": subscription_revenue,
-        "total_platform_revenue": platform_transaction_revenue + subscription_revenue,
+        # Guesthouse totals (explicit split)
+        "guesthouse_revenue": guesthouse_revenue,
+        "guesthouse_platform_fee": guesthouse_platform_fee,
+        "guesthouse_payment_count": guesthouse_payment_count,
+        # Combined platform revenue (rental tx + guesthouse tx + subscriptions)
+        "platform_transaction_revenue": platform_transaction_revenue + guesthouse_platform_fee,
+        "total_platform_revenue": (
+            platform_transaction_revenue + guesthouse_platform_fee + subscription_revenue
+        ),
         "transaction_fee_rate": settings.PLATFORM_TRANSACTION_FEE_RATE,
         "monthly_subscription": settings.LANDLORD_MONTHLY_SUBSCRIPTION,
         "recent_payments": Payment.objects.select_related(

@@ -110,12 +110,34 @@
                     </div>
                 </div>
                 <div class="gh-topbar-right">
-                    <div class="gh-topbar-user">
+                    <div class="gh-topbar-user" onclick="document.getElementById('ghUserMenu').classList.toggle('show')" style="cursor:pointer; position:relative;">
                         <span class="gh-user-name">{{ user.get_full_name|default:user.username }}</span>
                         <div class="gh-user-avatar">{{ user.get_full_name|default:user.username|make_list|first|upper }}</div>
+                        <div id="ghUserMenu" class="gh-user-menu">
+                            <div class="gh-user-menu-header">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                <small style="color:#6b7280; display:block;">{% if user.is_superuser %}Superuser{% else %}Guesthouse User{% endif %}</small>
+                            </div>
+                            <a href="{% url 'guesthouse:dashboard' %}" class="gh-user-menu-item"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                            <a href="{% url 'guesthouse:report_index' %}" class="gh-user-menu-item"><i class="bi bi-graph-up"></i> Reports</a>
+                            <div class="gh-user-menu-divider"></div>
+                            <a href="{% url 'guesthouse:logout' %}" class="gh-user-menu-item gh-user-menu-logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                        </div>
                     </div>
                 </div>
             </header>
+
+            <script>
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    var menu = document.getElementById('ghUserMenu');
+                    if (!menu) return;
+                    var trigger = e.target.closest('.gh-topbar-user');
+                    if (!trigger && menu.classList.contains('show')) {
+                        menu.classList.remove('show');
+                    }
+                });
+            </script>
 
             <!-- Page Content -->
             <div class="gh-content">
