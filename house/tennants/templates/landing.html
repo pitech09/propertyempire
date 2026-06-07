@@ -531,6 +531,25 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            .navbar {
+                padding: 0.85rem 1rem;
+            }
+
+            .navbar-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.85rem;
+            }
+
+            .navbar-links {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .navbar-links a {
+                padding: 0.55rem 0.95rem;
+            }
+
             .hero-title {
                 font-size: 2.5rem;
             }
@@ -615,6 +634,7 @@
             <div class="navbar-links">
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#guesthouse" class="nav-link">Guesthouse</a>
+                <a href="{% url 'marketplace:home' %}" class="nav-link">Marketplace</a>
                 <a href="{% url 'login' %}" class="nav-link">Sign In</a>
                 <a href="{% url 'register' %}" class="btn-nav">Get Started</a>
             </div>
@@ -643,6 +663,9 @@
                 </a>
                 <a href="#features" class="btn-secondary">
                     Learn More
+                </a>
+                <a href="{% url 'marketplace:home' %}" class="btn-secondary">
+                    Browse Marketplace
                 </a>
             </div>
             <div class="hero-stats">
@@ -780,6 +803,9 @@
                     <path d="M8 0L6.59 1.41L12.17 7H0V9H12.17L6.59 14.59L8 16L16 8L8 0Z"/>
                 </svg>
             </a>
+            <div style="margin-top: 1rem;">
+                <a href="{% url 'marketplace:home' %}" class="btn-secondary">Explore the Marketplace</a>
+            </div>
         </div>
     </section>
 

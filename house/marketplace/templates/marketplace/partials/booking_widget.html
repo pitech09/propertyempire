@@ -1,0 +1,57 @@
+<div class="mp-card rounded-[2rem] p-6">
+    <div class="flex items-center justify-between gap-4">
+        <div>
+            <h3 class="font-display text-2xl font-extrabold text-slate-950">{% if property.is_bookable %}Book now{% else %}Send enquiry{% endif %}</h3>
+            <p class="mt-1 text-sm text-slate-600">{% if property.is_bookable %}Reserve this stay with a quick request.{% else %}Ask about availability, rates, or long stays.{% endif %}</p>
+        </div>
+        <div class="rounded-2xl bg-slate-950 px-4 py-3 text-right text-white">
+            <div class="text-xs uppercase tracking-[0.3em] text-white/60">From</div>
+            <div class="text-xl font-extrabold">M {{ property.price_from|floatformat:0 }}</div>
+        </div>
+    </div>
+
+    <form class="mt-6 space-y-4" method="post" action="{% url 'marketplace:property_enquiry' property.slug %}">
+        {% csrf_token %}
+        <div class="grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Full name</label>
+                {{ lead_form.full_name }}
+                {% for error in lead_form.full_name.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Email</label>
+                {{ lead_form.email }}
+                {% for error in lead_form.email.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Phone</label>
+                {{ lead_form.phone }}
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Guests</label>
+                {{ lead_form.guests }}
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Check-in</label>
+                {{ lead_form.check_in }}
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Check-out</label>
+                {{ lead_form.check_out }}
+            </div>
+        </div>
+        <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">Message</label>
+            {{ lead_form.message }}
+        </div>
+        {% if lead_form.non_field_errors %}
+        <div class="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ lead_form.non_field_errors|striptags }}
+        </div>
+        {% endif %}
+        <button type="submit" class="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5">
+            {% if property.is_bookable %}Request booking{% else %}Send enquiry{% endif %}
+        </button>
+    </form>
+</div>
+

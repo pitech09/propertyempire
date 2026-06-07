@@ -49,13 +49,7 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@propertyempire.loc
 PLATFORM_TRANSACTION_FEE_RATE = Decimal(os.getenv("PLATFORM_TRANSACTION_FEE_RATE", "0.01"))
 LANDLORD_MONTHLY_SUBSCRIPTION = Decimal(os.getenv("LANDLORD_MONTHLY_SUBSCRIPTION", "200.00"))
 
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 CSRF_TRUSTED_ORIGINS = [
     "https://propertyempire.onrender.com",
@@ -86,11 +80,12 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# if tab is closed in the browser the user is logged out
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_AGE = 60 * 30  # 30 minutes
-# always ask for authentication after 5 minutes of inactivity
-SESSION_SAVE_EVERY_REQUEST = True
+    # if tab is closed in the browser the user is logged out
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+    SESSION_COOKIE_AGE = 60 * 30  # 30 minutes
+    # always ask for authentication after 5 minutes of inactivity
+    SESSION_SAVE_EVERY_REQUEST = True
+
 
 
 INSTALLED_APPS = [
@@ -103,6 +98,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "tennants",
     "guesthouse",
+    "marketplace",
     "rest_framework",
     "rest_framework.authtoken",
     "phonenumber_field",

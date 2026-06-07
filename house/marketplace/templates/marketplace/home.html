@@ -1,0 +1,129 @@
+{% extends "marketplace/base_marketplace.html" %}
+{% block title %}Discover stays and rentals{% endblock %}
+{% block content %}
+<section class="relative overflow-hidden">
+    <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div class="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+            <div class="space-y-8">
+                <div class="inline-flex rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                    Booking.com search, Airbnb feel, Property24 clarity
+                </div>
+                <div class="space-y-5">
+                    <h1 class="max-w-3xl font-display text-5xl font-black tracking-tight text-slate-950 sm:text-6xl">
+                        Discover approved properties across Property Empire.
+                    </h1>
+                    <p class="max-w-2xl text-lg leading-8 text-slate-600">
+                        Search public guest houses and rental homes by location, dates, guest count, and amenities. No management workflows changed.
+                    </p>
+                </div>
+                {% include "marketplace/partials/search_bar.html" %}
+                <div class="flex flex-wrap gap-3">
+                    {% for hint in location_hints %}
+                    <a href="{% url 'marketplace:search' %}?location={{ hint|urlencode }}" class="mp-pill bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">{{ hint }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="mp-card mp-hero-gradient rounded-[2.5rem] p-8 text-white shadow-2xl shadow-slate-950/20">
+                <div class="flex h-full min-h-[420px] flex-col justify-between">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.4em] text-white/60">Curated picks</p>
+                        <h2 class="mt-4 max-w-md font-display text-4xl font-black leading-tight">Fast discovery for guests, families, and business travelers.</h2>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        <div class="rounded-3xl bg-white/10 p-4 backdrop-blur">
+                            <div class="text-3xl font-black">{{ featured_guest_houses|length }}</div>
+                            <div class="mt-1 text-sm text-white/75">Featured guest houses</div>
+                        </div>
+                        <div class="rounded-3xl bg-white/10 p-4 backdrop-blur">
+                            <div class="text-3xl font-black">{{ featured_rentals|length }}</div>
+                            <div class="mt-1 text-sm text-white/75">Featured rentals</div>
+                        </div>
+                        <div class="rounded-3xl bg-white/10 p-4 backdrop-blur">
+                            <div class="text-3xl font-black">{{ most_popular|length }}</div>
+                            <div class="mt-1 text-sm text-white/75">Popular picks</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+    <div class="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+        <div class="space-y-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-[0.35em] text-slate-500">Browse</p>
+                    <h2 class="mt-2 font-display text-3xl font-black text-slate-950">All public listings</h2>
+                </div>
+                <a href="{% url 'marketplace:search' %}" class="inline-flex w-fit rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white">Open search</a>
+            </div>
+            <div id="marketplace-results">
+                {% include "marketplace/partials/property_grid.html" with properties=properties %}
+            </div>
+        </div>
+        <div class="space-y-6">
+            <div class="mp-card rounded-[2rem] p-6">
+                <h3 class="font-display text-2xl font-black text-slate-950">Featured Guest Houses</h3>
+                <div class="mt-4 grid gap-4">
+                    {% for property in featured_guest_houses %}
+                        <a href="{% url 'marketplace:property_detail' property.slug %}" class="rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-lg">
+                            <div class="text-sm font-bold text-slate-500">{{ property.property_type }}</div>
+                            <div class="mt-1 font-semibold text-slate-950">{{ property.title }}</div>
+                            <div class="mt-1 text-sm text-slate-600">{{ property.location_summary }}</div>
+                        </a>
+                    {% empty %}
+                        <p class="text-sm text-slate-500">No featured guest houses yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="mp-card rounded-[2rem] p-6">
+                <h3 class="font-display text-2xl font-black text-slate-950">Featured Rentals</h3>
+                <div class="mt-4 grid gap-4">
+                    {% for property in featured_rentals %}
+                        <a href="{% url 'marketplace:property_detail' property.slug %}" class="rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-lg">
+                            <div class="text-sm font-bold text-slate-500">{{ property.property_type }}</div>
+                            <div class="mt-1 font-semibold text-slate-950">{{ property.title }}</div>
+                            <div class="mt-1 text-sm text-slate-600">{{ property.location_summary }}</div>
+                        </a>
+                    {% empty %}
+                        <p class="text-sm text-slate-500">No featured rentals yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+    <div class="grid gap-6 lg:grid-cols-3">
+        <div class="mp-card rounded-[2rem] p-6">
+            <h3 class="font-display text-2xl font-black text-slate-950">Recently Added</h3>
+            <div class="mt-4 grid gap-3">
+                {% for property in recently_added %}
+                <a href="{% url 'marketplace:property_detail' property.slug %}" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">{{ property.title }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="mp-card rounded-[2rem] p-6">
+            <h3 class="font-display text-2xl font-black text-slate-950">Most Popular</h3>
+            <div class="mt-4 grid gap-3">
+                {% for property in most_popular %}
+                <a href="{% url 'marketplace:property_detail' property.slug %}" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                    {{ property.title }} <span class="text-slate-400">•</span> ★ {{ property.rating_average|floatformat:1 }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="mp-card rounded-[2rem] p-6">
+            <h3 class="font-display text-2xl font-black text-slate-950">Why this layer</h3>
+            <ul class="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+                <li>Public search and discovery without touching management workflows.</li>
+                <li>HTMX-powered updates for fast filtering and autocomplete.</li>
+                <li>Map-ready listings with owner profiles, ratings, and reviews.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}
