@@ -3,10 +3,12 @@ from tennants.views.tenants import initiate_payment, report_issue, tenant_dashbo
 from tennants.views.web import (dashboard, BuildingListViewWeb, BuildingDetailViewWeb,
                     landlord_financial_dashboard, owner_dashboard,
                     reports, export_payments_csv, export_tenants_csv,
+                    update_location,
 
                     BuildingCreateViewWeb, BuildingUpdateViewWeb, BuildingDeleteViewWeb,
                     HouseListViewWeb, HouseDetailViewWeb,
                     HouseCreateViewWeb, HouseUpdateViewWeb, HouseDeleteViewWeb,
+                    house_images, house_image_delete,
                     TenantListViewWeb, TenantDetailViewWeb,
                     TenantCreateViewWeb, TenantUpdateViewWeb, TenantDeleteViewWeb,
                     PaymentListViewWeb, PaymentDetailViewWeb,
@@ -55,6 +57,9 @@ urlpatterns = [
     path('reports/export/payments.csv', export_payments_csv, name='export_payments_csv'),
     path('reports/export/tenants.csv', export_tenants_csv, name='export_tenants_csv'),
 
+    # Property location update
+    path('update-location/', update_location, name='update_location'),
+
     # Buildings
 
     path('buildings/', BuildingListViewWeb.as_view(), name='building_list'),
@@ -69,6 +74,8 @@ urlpatterns = [
     path('houses/<int:pk>/', HouseDetailViewWeb.as_view(), name='house_detail'),
     path('houses/<int:pk>/edit/', HouseUpdateViewWeb.as_view(), name='house_edit'),
     path('houses/<int:pk>/delete/', HouseDeleteViewWeb.as_view(), name='house_delete'),
+    path('houses/<int:house_pk>/images/', house_images, name='house_images'),
+    path('houses/<int:house_pk>/images/<int:image_pk>/delete/', house_image_delete, name='house_image_delete'),
 
     # Tenants
     path('tenants/', TenantListViewWeb.as_view(), name='tenant_list'),

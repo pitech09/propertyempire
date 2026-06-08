@@ -33,6 +33,8 @@ urlpatterns = [
     path("rooms/<int:pk>/", rooms.room_detail, name="room_detail"),
     path("rooms/<int:pk>/edit/", rooms.room_edit, name="room_edit"),
     path("rooms/<int:pk>/delete/", rooms.room_delete, name="room_delete"),
+    path("rooms/<int:pk>/images/", rooms.room_images, name="room_images"),
+    path("rooms/<int:pk>/images/<int:image_pk>/delete/", rooms.room_image_delete, name="room_image_delete"),
 
     # ----- Room Types -----
     path("room-types/", room_types.room_type_list, name="room_type_list"),

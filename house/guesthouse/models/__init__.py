@@ -5,7 +5,7 @@ while still keeping a modular file layout on disk.
 """
 
 from .room_type import RoomType
-from .room import Room
+from .room import Room, RoomImage
 from .guest import Guest
 from .booking import Booking
 from .stay import Stay
@@ -16,6 +16,7 @@ from .maintenance import RoomMaintenance
 __all__ = [
     "RoomType",
     "Room",
+    "RoomImage",
     "Guest",
     "Booking",
     "Stay",

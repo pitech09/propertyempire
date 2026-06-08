@@ -63,6 +63,7 @@ class House(models.Model):
     house_rent_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, db_index=True)
     deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, db_index=True)
     occupation = models.BooleanField(default=False)
+    image = models.ImageField(upload_to="houses/", blank=True, null=True, help_text="House photo for marketplace and records")
     #Tenant = models.ForeignKey(Tenant, related_name='tenants', on_delete=models.CASCADE, db_index=True)
 
     class Meta:
@@ -96,6 +97,35 @@ class House(models.Model):
 
     def __str__(self):
         return f"{self.flat_building.building_name} - House {self.house_number}"
+
+
+# ------------------------------
+# HouseImage Model (up to 5 pictures per house)
+# ------------------------------
+class HouseImage(models.Model):
+    MAX_IMAGES = 5
+    ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+    MAX_FILE_SIZE_MB = 5
+
+    house = models.ForeignKey(House, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="houses/gallery/")
+    caption = models.CharField(max_length=160, blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=0, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("sort_order", "id")
+
+    def clean(self):
+        if self.house_id and self.house.images.exclude(pk=self.pk).count() >= self.MAX_IMAGES:
+            raise ValidationError(f"A house may have at most {self.MAX_IMAGES} images.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.caption or f"Image for {self.house}"
 
 
 # ------------------------------

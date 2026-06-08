@@ -137,3 +137,32 @@ class Room(models.Model):
         ):
             return Decimal(self.weekend_price)
         return Decimal(self.base_price_per_night)
+
+
+# ------------------------------
+# RoomImage Model (up to 5 pictures per room)
+# ------------------------------
+class RoomImage(models.Model):
+    MAX_IMAGES = 5
+    ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+    MAX_FILE_SIZE_MB = 5
+
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="guesthouse/rooms/gallery/")
+    caption = models.CharField(max_length=160, blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=0, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("sort_order", "id")
+
+    def clean(self):
+        if self.room_id and self.room.images.exclude(pk=self.pk).count() >= self.MAX_IMAGES:
+            raise ValidationError(f"A room may have at most {self.MAX_IMAGES} images.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.caption or f"Image for {self.room}"

@@ -1,10 +1,10 @@
 <article class="mp-card group overflow-hidden rounded-[2rem]">
     <a href="{% url 'marketplace:property_detail' property.slug %}" class="block">
-        <div class="relative h-64 overflow-hidden">
+        <div class="relative overflow-hidden bg-slate-800" style="aspect-ratio: 4/3;">
             {% if property.main_image %}
-                <img src="{{ property.main_image.url }}" alt="{{ property.title }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
+                <img src="{{ property.main_image.url }}" alt="{{ property.title }}" class="h-full w-full object-contain transition duration-500 group-hover:scale-105">
             {% else %}
-                <div class="mp-image-fallback flex h-full w-full items-end p-5 text-white">
+                <div class="mp-image-fallback flex h-full w-full items-end p-5 text-white" style="aspect-ratio: 4/3;">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-[0.3em] text-white/70">Property Empire</p>
                         <h3 class="mt-2 text-2xl font-display font-extrabold">{{ property.title }}</h3>
@@ -26,7 +26,7 @@
                 </div>
                 <div class="text-right">
                     <div class="text-lg font-extrabold text-slate-950">M {{ property.price_from|floatformat:0 }}</div>
-                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">per night</div>
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{% if property.source_type == 'house' %}per month{% else %}per night{% endif %}</div>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-600">

@@ -146,7 +146,17 @@ class Property(models.Model):
 
     @property
     def gallery_images(self):
-        return self.images.all().order_by("sort_order", "id")
+        # Include marketplace PropertyImage gallery
+        images = list(self.images.all().order_by("sort_order", "id"))
+        # Also include source object gallery images (HouseImage / RoomImage)
+        source_obj = self.source_object
+        if source_obj:
+            source_images = getattr(source_obj, "images", None)
+            if source_images is not None:
+                for img in source_images.all().order_by("sort_order", "id"):
+                    # Create a compatible wrapper so templates can use .image.url
+                    images.append(img)
+        return images
 
     @property
     def amenity_list(self):
@@ -156,12 +166,15 @@ class Property(models.Model):
     def main_image(self):
         if self.cover_image:
             return self.cover_image
-        first = self.gallery_images.first()
-        if first:
-            return first.image
+        # Check source object's image field first (House.image or Room.image)
         source_image = getattr(self.source_object, "image", None)
         if source_image:
             return source_image
+        # Check gallery images (marketplace PropertyImage + source HouseImage/RoomImage)
+        gallery = self.gallery_images
+        if gallery:
+            first = gallery[0]
+            return first.image
         return None
 
     @property

@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers, generics
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from tennants.models import Tenant, House, Payment, FlatBuilding, RentCharge, Issue, PaymentRequest
+from tennants.models import Tenant, House, HouseImage, Payment, FlatBuilding, RentCharge, Issue, PaymentRequest
 from tennants.serializers import (TenantSerializer, HouseSerializer, PaymentSerializer,
                           FlatBuildingSerializer, RegisterAdminSerializer, AdminLoginSerializer, ForgotPasswordSerializer)
 import logging
@@ -30,7 +30,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import hashlib
 import json
 import logging
-from tennants.forms import RegistrationForm
+from tennants.forms import RegistrationForm, HouseImageForm
 from django.shortcuts import render, redirect
 from django.db import IntegrityError, transaction
 
@@ -1459,6 +1459,151 @@ def accept_bid(request, bid_id):
         f"Issue status updated to 'In Progress'."
     )
     return redirect("issue_bids", issue_id=bid.issue_id)
+
+
+# ============================================================================
+# PROPERTY LOCATION VIEWS (Update via browser geolocation)
+# ============================================================================
+
+@login_required
+def update_location(request):
+    """Allow property owners to update their property location (House & Room) via browser geolocation."""
+    from marketplace.models import Property
+    from django.contrib.contenttypes.models import ContentType
+
+    # Collect all properties owned by this user (via House/Room with user FK)
+    from guesthouse.models import Room
+    user_houses = House.objects.filter(user=request.user).select_related("flat_building")
+    user_rooms = Room.objects.filter(room_type__isnull=False).none()  # placeholder
+    # For guesthouse rooms, no direct user FK; treat all rooms for admin, or include those via marketplace Property owner
+
+    # Also fetch marketplace properties owned by this user
+    marketplace_props = Property.objects.filter(
+        owner_profile__user=request.user, marketplace_enabled=True
+    ).select_related("owner_profile")
+
+    # Stats
+    total_houses = user_houses.count()
+    houses_with_location = user_houses.exclude(latitude__isnull=True, longitude__isnull=True).count()
+    total_props = marketplace_props.count()
+    props_with_location = marketplace_props.exclude(latitude__isnull=True, longitude__isnull=True).count()
+
+    if request.method == "POST":
+        # AJAX endpoint expects: property_type, property_id, latitude, longitude
+        property_type = request.POST.get("property_type")  # "house" or "room" or "marketplace"
+        property_id = request.POST.get("property_id")
+        try:
+            lat = float(request.POST.get("latitude", ""))
+            lng = float(request.POST.get("longitude", ""))
+        except (TypeError, ValueError):
+            messages.error(request, "Invalid coordinates provided.")
+            return redirect("update_location")
+
+        if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+            messages.error(request, "Coordinates out of valid range.")
+            return redirect("update_location")
+
+        updated = False
+        if property_type == "house" and property_id:
+            try:
+                house = House.objects.get(pk=int(property_id), user=request.user)
+                house.latitude = lat
+                house.longitude = lng
+                house.save(update_fields=["latitude", "longitude"])
+                # Update all marketplace properties linked to this house
+                ct = ContentType.objects.get_for_model(House)
+                Property.objects.filter(
+                    source_content_type=ct, source_object_id=house.pk
+                ).update(latitude=lat, longitude=lng)
+                updated = True
+            except House.DoesNotExist:
+                pass
+        elif property_type == "marketplace" and property_id:
+            try:
+                prop = Property.objects.get(
+                    pk=int(property_id), owner_profile__user=request.user
+                )
+                prop.latitude = lat
+                prop.longitude = lng
+                prop.save(update_fields=["latitude", "longitude"])
+                updated = True
+            except Property.DoesNotExist:
+                pass
+
+        if updated:
+            messages.success(request, f"Location updated successfully! ({lat:.6f}, {lng:.6f})")
+        else:
+            messages.error(request, "Could not update location. Property not found or you don't have permission.")
+        return redirect("update_location")
+
+    context = {
+        "user_houses": user_houses,
+        "marketplace_props": marketplace_props,
+        "total_houses": total_houses,
+        "houses_with_location": houses_with_location,
+        "total_props": total_props,
+        "props_with_location": props_with_location,
+    }
+    return render(request, "tennants/update_location.html", context)
+
+
+# ============================================================================
+# HOUSE IMAGES VIEWS (Property owners manage up to 5 pictures per house)
+# ============================================================================
+
+@login_required
+def house_images(request, house_pk):
+    """View and manage images for a house (up to 5 pictures)."""
+    house = get_object_or_404(House, pk=house_pk, user=request.user)
+    images = house.images.all().order_by("sort_order", "id")
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "add":
+            if images.count() >= HouseImage.MAX_IMAGES:
+                messages.error(request, f"Maximum of {HouseImage.MAX_IMAGES} images allowed.")
+                return redirect("house_images", house_pk=house.pk)
+
+            form = HouseImageForm(house=house, data=request.POST, files=request.FILES)
+            if form.is_valid():
+                house_image = form.save(commit=False)
+                house_image.house = house
+                house_image.save()
+                messages.success(request, "Image uploaded successfully!")
+                return redirect("house_images", house_pk=house.pk)
+            else:
+                for error in form.errors.values():
+                    messages.error(request, error.as_text())
+
+        elif action == "delete":
+            image_id = request.POST.get("image_id")
+            if image_id:
+                img = get_object_or_404(HouseImage, pk=image_id, house=house)
+                img.delete()
+                messages.success(request, "Image deleted.")
+
+        return redirect("house_images", house_pk=house.pk)
+
+    form = HouseImageForm(house=house)
+    context = {
+        "house": house,
+        "images": images,
+        "form": form,
+        "remaining_slots": HouseImage.MAX_IMAGES - images.count(),
+    }
+    return render(request, "houses/house_images.html", context)
+
+
+@login_required
+def house_image_delete(request, house_pk, image_pk):
+    """Delete a specific house image."""
+    house = get_object_or_404(House, pk=house_pk, user=request.user)
+    img = get_object_or_404(HouseImage, pk=image_pk, house=house)
+    if request.method == "POST":
+        img.delete()
+        messages.success(request, "Image deleted successfully!")
+    return redirect("house_images", house_pk=house.pk)
 
 
 @login_required

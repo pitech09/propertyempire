@@ -1,5 +1,5 @@
 from django import forms
-from .models import House, Payment, Tenant, FlatBuilding, LandlordProfile, RentCharge, PaymentRequest, Worker, Expense, MaintenanceBid
+from .models import House, HouseImage, Payment, Tenant, FlatBuilding, LandlordProfile, RentCharge, PaymentRequest, Worker, Expense, MaintenanceBid
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from phonenumber_field.formfields import PhoneNumberField
@@ -58,6 +58,9 @@ class HouseForm(forms.ModelForm):
     class Meta:
         model = House
         fields = '__all__'
+        widgets = {
+            'image': forms.ClearableFileInput(attrs={'accept': 'image/*'}),
+        }
 
 class PaymentForm(forms.ModelForm):
     class Meta:
@@ -177,3 +180,44 @@ class ExpenseForm(forms.ModelForm):
             self.fields["tenant"].queryset = Tenant.objects.filter(house__user=user, is_active=True)
             # Prioritize tenant when recoverable
             self.fields["tenant"].required = False
+
+
+# ------------------------------
+# House Image Form (up to 5 pictures)
+# ------------------------------
+class HouseImageForm(forms.ModelForm):
+    class Meta:
+        model = HouseImage
+        fields = ["image", "caption", "sort_order"]
+        widgets = {
+            "image": forms.ClearableFileInput(attrs={"accept": "image/*"}),
+            "caption": forms.TextInput(attrs={"placeholder": "Optional caption (e.g. Living Room, Kitchen)"}),
+            "sort_order": forms.NumberInput(attrs={"min": 0, "max": 100}),
+        }
+        help_texts = {
+            "image": "Upload a photo (JPG, PNG, GIF, WebP). Max size: 5MB.",
+        }
+
+    def __init__(self, house=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.house = house
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+        if image:
+            import os
+            ext = os.path.splitext(image.name)[1].lower().lstrip(".")
+            if ext not in HouseImage.ALLOWED_EXTENSIONS:
+                raise forms.ValidationError(f"Image format not supported. Allowed: {', '.join(HouseImage.ALLOWED_EXTENSIONS)}")
+            if image.size > HouseImage.MAX_FILE_SIZE_MB * 1024 * 1024:
+                raise forms.ValidationError(f"Image must be less than {HouseImage.MAX_FILE_SIZE_MB}MB.")
+        return image
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.house:
+            from django.core.exceptions import ValidationError as VE
+            existing = self.house.images.count()
+            if existing >= HouseImage.MAX_IMAGES:
+                raise VE(f"Maximum of {HouseImage.MAX_IMAGES} images allowed. Please delete one before adding another.")
+        return cleaned_data

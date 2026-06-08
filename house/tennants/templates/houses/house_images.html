@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Photos - House {{ house.house_number }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    <span>/</span>
+    <a href="{% url 'house_list' %}">Houses</a>
+    <span>/</span>
+    <a href="{% url 'house_detail' house.pk %}">House {{ house.house_number }}</a>
+    <span>/</span>
+    <span>Photos</span>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">Photos for <span>House {{ house.house_number }}</span></h1>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'house_detail' house.pk %}" class="btn btn-secondary">Back to House</a>
+    </div>
+</div>
+
+<!-- Photo Counter -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value" style="color: var(--accent-green);">{{ images.count }} / 5</div>
+        <div class="stat-label">Photos Uploaded</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" style="color: {% if remaining_slots > 0 %}var(--accent-yellow){% else %}var(--danger){% endif %};">
+            {{ remaining_slots }}
+        </div>
+        <div class="stat-label">Slots Remaining</div>
+    </div>
+</div>
+
+<!-- Upload Form -->
+{% if remaining_slots > 0 %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Upload New Photo</h2>
+    </div>
+    <div style="padding: 1.5rem;">
+        <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1rem;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Photo *</label>
+                    <input type="file" name="image" accept="image/*" required
+                           style="width: 100%; padding: 0.6rem; background: var(--dark-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.9rem;">
+                    <small style="color: var(--text-muted); font-size: 0.75rem;">JPG, PNG, GIF, WebP. Max 5MB.</small>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Caption (optional)</label>
+                    <input type="text" name="caption" maxlength="160" placeholder="e.g. Living Room, Kitchen"
+                           style="width: 100%; padding: 0.6rem; background: var(--dark-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.9rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Display Order</label>
+                    <input type="number" name="sort_order" value="0" min="0" max="100"
+                           style="width: 100%; padding: 0.6rem; background: var(--dark-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.9rem;">
+                    <small style="color: var(--text-muted); font-size: 0.75rem;">Lower numbers appear first.</small>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                    Upload Photo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Upload New Photo</h2>
+    </div>
+    <div class="empty-state">
+        <h3 style="color: var(--danger);">Maximum photos reached</h3>
+        <p>This house already has {{ images.count }} of 5 allowed photos. Delete an existing photo to upload a new one.</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Existing Photos -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Existing Photos</h2>
+        {% if images %}
+        <span class="badge badge-info">{{ images.count }} photo{{ images.count|pluralize }}</span>
+        {% endif %}
+    </div>
+
+    {% if images %}
+    <div style="padding: 1.5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.25rem;">
+        {% for img in images %}
+        <div style="background: var(--dark-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+            <!-- Image -->
+            <div style="width: 100%; height: 200px; overflow: hidden; background: var(--dark-elevated);">
+                {% if img.image %}
+                <img src="{{ img.image.url }}" alt="{{ img.caption|default:'House photo' }}"
+                     style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                    No Image
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Details -->
+            <div style="padding: 1rem;">
+                {% if img.caption %}
+                <div style="font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">{{ img.caption }}</div>
+                {% endif %}
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Order: {{ img.sort_order }} &middot; Added {{ img.created_at|date:"M d, Y" }}
+                </div>
+
+                <!-- Delete Form -->
+                <form method="post" style="display: inline;"
+                      onsubmit="return confirm('Are you sure you want to delete this photo?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="image_id" value="{{ img.pk }}">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                        Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No photos yet</h3>
+        <p>Upload up to 5 photos to showcase this property. Photos help attract potential tenants and guests.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-info {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--blue);
+    }
+    .btn-danger {
+        background: var(--danger);
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .btn-danger:hover {
+        background: var(--danger-hover);
+    }
+</style>
+{% endblock %}

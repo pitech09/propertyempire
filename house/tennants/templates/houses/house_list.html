@@ -77,6 +77,7 @@
                     <th>Rent Amount</th>
                     <th>Deposit</th>
                     <th>Status</th>
+                    <th>Photos</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -102,6 +103,11 @@
                         {% else %}
                         <span class="badge badge-warning">Vacant</span>
                         {% endif %}
+                    </td>
+                    <td>
+                        {% with img_count=house.images.count %}
+                        <a href="{% url 'house_images' house.pk %}" class="btn-icon" title="Manage Photos ({{ img_count }}/5)">P</a>
+                        {% endwith %}
                     </td>
                     <td>
                         <div class="action-buttons">

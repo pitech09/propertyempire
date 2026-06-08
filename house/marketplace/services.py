@@ -106,6 +106,8 @@ def _apply_source_data(prop: Property, source_obj):
             bio=f"Owner of {building.building_name} and trusted Property Empire partner.",
             response_rate=85,
         ) if source_obj.user_id else prop.owner_profile
+        if getattr(source_obj, "image", None):
+            prop.cover_image = source_obj.image
         prop.key_amenities = [item for item in [
             "WiFi",
             "Parking",
