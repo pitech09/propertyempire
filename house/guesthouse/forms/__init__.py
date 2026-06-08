@@ -5,6 +5,7 @@ from .bookings import BookingForm, WalkInBookingForm
 from .payments import GuestPaymentForm
 from .housekeeping import HousekeepingTaskForm
 from .maintenance import RoomMaintenanceForm
+from .images import GuestHouseImageForm
 
 __all__ = [
     "RoomTypeForm",
@@ -16,4 +17,5 @@ __all__ = [
     "GuestPaymentForm",
     "HousekeepingTaskForm",
     "RoomMaintenanceForm",
+    "GuestHouseImageForm",
 ]

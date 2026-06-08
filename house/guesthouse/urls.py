@@ -131,6 +131,10 @@ urlpatterns = [
     path("reports/bookings/", reports.booking_report, name="report_bookings"),
     path("reports/guests/", reports.guest_history_report, name="report_guests"),
 
+    # ----- Guest House Property Images (up to 5 overall pictures) -----
+    path("images/", rooms.guesthouse_images, name="guesthouse_images"),
+    path("images/<int:image_pk>/delete/", rooms.guesthouse_image_delete, name="guesthouse_image_delete"),
+
     # ----- AJAX helpers -----
     path("ajax/availability/", rooms.ajax_check_availability, name="ajax_availability"),
     path("ajax/room/<int:pk>/pricing/", rooms.ajax_room_pricing, name="ajax_room_pricing"),

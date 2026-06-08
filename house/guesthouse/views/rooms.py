@@ -10,8 +10,9 @@ from django.urls import reverse
 from django.utils import timezone as _tz
 from django.views.decorators.http import require_http_methods, require_POST
 
+from guesthouse.forms.images import GuestHouseImageForm
 from guesthouse.forms.rooms import RoomForm, RoomImageForm, RoomTypeForm
-from guesthouse.models import Booking, Room, RoomImage, RoomType
+from guesthouse.models import Booking, GuestHouseImage, Room, RoomImage, RoomType
 from guesthouse.services.availability import BookingAvailabilityService
 from guesthouse.services.pricing import PricingService
 from guesthouse.views._common import (
@@ -274,7 +275,7 @@ def room_images(request, pk):
         "form": form,
         "remaining_slots": RoomImage.MAX_IMAGES - images.count(),
     }
-    return render_gh(request, "rooms/room_images.html", context)
+    return render_gh(request, "guesthouse/rooms/room_images.html", context)
 
 
 @role_required()
@@ -286,3 +287,59 @@ def room_image_delete(request, pk, image_pk):
         img.delete()
         messages.success(request, "Image deleted successfully!")
     return redirect("guesthouse:room_images", pk=room.pk)
+
+
+# ------------------------------------------------------------------ #
+# Guest House Property Images (up to 5 overall property pictures)
+# ------------------------------------------------------------------ #
+@role_required()
+def guesthouse_images(request):
+    """View and manage overall guest house property images (up to 5 pictures)."""
+    images = GuestHouseImage.objects.all().order_by("sort_order", "id")
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "add":
+            if images.count() >= GuestHouseImage.MAX_IMAGES:
+                messages.error(
+                    request, f"Maximum of {GuestHouseImage.MAX_IMAGES} images allowed."
+                )
+                return redirect("guesthouse:guesthouse_images")
+
+            form = GuestHouseImageForm(data=request.POST, files=request.FILES)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Image uploaded successfully!")
+                return redirect("guesthouse:guesthouse_images")
+            else:
+                for error in form.errors.values():
+                    messages.error(request, error.as_text())
+
+        elif action == "delete":
+            image_id = request.POST.get("image_id")
+            if image_id:
+                img = get_object_or_404(GuestHouseImage, pk=image_id)
+                img.delete()
+                messages.success(request, "Image deleted.")
+
+        return redirect("guesthouse:guesthouse_images")
+
+    form = GuestHouseImageForm()
+    context = {
+        "images": images,
+        "form": form,
+        "remaining_slots": GuestHouseImage.MAX_IMAGES - images.count(),
+        "active_nav": "guesthouse_images",
+    }
+    return render_gh(request, "guesthouse/gallery/images.html", context)
+
+
+@role_required()
+def guesthouse_image_delete(request, image_pk):
+    """Delete a specific guest house property image."""
+    img = get_object_or_404(GuestHouseImage, pk=image_pk)
+    if request.method == "POST":
+        img.delete()
+        messages.success(request, "Image deleted successfully!")
+    return redirect("guesthouse:guesthouse_images")

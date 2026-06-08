@@ -1,23 +1,19 @@
 {% extends "guesthouse/base_guesthouse.html" %}
 
-{% block title %}Manage Photos - Room {{ room.room_number }}{% endblock %}
+{% block title %}Manage Guest House Photos{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'guesthouse:dashboard' %}">Guest House</a>
 <i class="bi bi-chevron-right"></i>
-<a href="{% url 'guesthouse:room_list' %}">Rooms</a>
-<i class="bi bi-chevron-right"></i>
-<a href="{% url 'guesthouse:room_detail' room.pk %}">Room {{ room.room_number }}</a>
-<i class="bi bi-chevron-right"></i>
-<span>Photos</span>
+<span>Property Photos</span>
 {% endblock %}
 
 {% block content %}
 <div class="gh-page-header">
-    <h1 class="gh-page-title">Photos for Room <strong>{{ room.room_number }}</strong></h1>
+    <h1 class="gh-page-title">Guest House Photos</h1>
     <div class="d-flex gap-2">
-        <a href="{% url 'guesthouse:room_detail' room.pk %}" class="gh-btn gh-btn-outline">
-            <i class="bi bi-arrow-left"></i> Back to Room
+        <a href="{% url 'guesthouse:dashboard' %}" class="gh-btn gh-btn-outline">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
     </div>
 </div>
@@ -63,7 +59,7 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Caption (optional)</label>
-                    <input type="text" name="caption" maxlength="160" placeholder="e.g. Bathroom, Balcony" class="form-control">
+                    <input type="text" name="caption" maxlength="160" placeholder="e.g. Exterior, Lobby, Dining Area" class="form-control">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Display Order</label>
@@ -88,7 +84,7 @@
     <div class="gh-card-body text-center py-4">
         <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
         <h5 class="text-danger mt-2">Maximum photos reached</h5>
-        <p class="text-muted mb-0">This room already has {{ images.count }} of 5 allowed photos. Delete an existing photo to upload a new one.</p>
+        <p class="text-muted mb-0">This guest house already has {{ images.count }} of 5 allowed photos. Delete an existing photo to upload a new one.</p>
     </div>
 </div>
 {% endif %}
@@ -113,7 +109,7 @@
                     <!-- Image -->
                     <div style="height: 180px; overflow: hidden; background: #f8f9fa; border-radius: 8px 8px 0 0;">
                         {% if img.image %}
-                        <img src="{{ img.image.url }}" alt="{{ img.caption|default:'Room photo' }}"
+                        <img src="{{ img.image.url }}" alt="{{ img.caption|default:'Guest house photo' }}"
                              style="width: 100%; height: 100%; object-fit: cover;">
                         {% else %}
                         <div class="d-flex align-items-center justify-content-center h-100 text-muted">
@@ -153,7 +149,7 @@
     <div class="gh-card-body text-center py-5">
         <i class="bi bi-images text-muted" style="font-size: 3rem;"></i>
         <h5 class="text-muted mt-3">No photos yet</h5>
-        <p class="text-muted">Upload up to 5 photos to showcase this room. Photos help attract potential guests.</p>
+        <p class="text-muted">Upload up to 5 photos to showcase the guest house property. Photos help attract potential guests.</p>
     </div>
     {% endif %}
 </div>

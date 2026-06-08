@@ -12,6 +12,7 @@ from .stay import Stay
 from .payment import GuestPayment
 from .housekeeping import HousekeepingTask
 from .maintenance import RoomMaintenance
+from .image import GuestHouseImage
 
 __all__ = [
     "RoomType",
@@ -23,4 +24,5 @@ __all__ = [
     "GuestPayment",
     "HousekeepingTask",
     "RoomMaintenance",
+    "GuestHouseImage",
 ]
