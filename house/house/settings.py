@@ -74,9 +74,9 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = False
 
-DEBUG = os.getenv("DEBUG", "False") == False
+DEBUG = os.getenv("DEBUG", "False").strip().lower() == "true"
 
-if not DEBUG:
+"""if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
@@ -90,7 +90,12 @@ if not DEBUG:
     SESSION_COOKIE_AGE = 60 * 30  # 30 minutes
     # always ask for authentication after 5 minutes of inactivity
     SESSION_SAVE_EVERY_REQUEST = True
-
+else:
+    # Development overrides — disable HTTPS when running locally
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+"""
 
 
 INSTALLED_APPS = [
