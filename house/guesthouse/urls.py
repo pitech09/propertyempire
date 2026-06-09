@@ -7,7 +7,6 @@ from guesthouse.views import (
     bookings,
     dashboard,
     guests,
-    housekeeping,
     invoices,
     maintenance,
     payments,
@@ -110,13 +109,6 @@ urlpatterns = [
         invoices.checkout_invoice_pdf,
         name="checkout_invoice_pdf",
     ),
-
-    # ----- Housekeeping -----
-    path("housekeeping/", housekeeping.task_list, name="task_list"),
-    path("housekeeping/add/", housekeeping.task_create, name="task_create"),
-    path("housekeeping/<int:pk>/edit/", housekeeping.task_edit, name="task_edit"),
-    path("housekeeping/<int:pk>/complete/", housekeeping.task_complete, name="task_complete"),
-    path("housekeeping/<int:pk>/delete/", housekeeping.task_delete, name="task_delete"),
 
     # ----- Maintenance -----
     path("maintenance/", maintenance.maintenance_list, name="maintenance_list"),

@@ -238,12 +238,6 @@
                             <div class="gh-stat-label">Unpaid Balances</div>
                         </div>
                     </a>
-                    <a href="{% url 'guesthouse:task_list' %}" class="gh-stat-link">
-                        <div class="gh-stat {% if pending_housekeeping > 0 %}gh-stat-info{% endif %}">
-                            <div class="gh-stat-value">{{ pending_housekeeping }}</div>
-                            <div class="gh-stat-label">Housekeeping Tasks</div>
-                        </div>
-                    </a>
                     <a href="{% url 'guesthouse:maintenance_list' %}" class="gh-stat-link">
                         <div class="gh-stat {% if pending_maintenance > 0 %}gh-stat-warning{% endif %}">
                             <div class="gh-stat-value">{{ pending_maintenance }}</div>
