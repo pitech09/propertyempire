@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.models import User
 from math import hypot
@@ -18,6 +19,7 @@ from guesthouse.services.booking_service import BookingError, BookingService
 from marketplace.forms import MarketplaceSearchForm, PropertyReviewForm, PublicLeadForm
 from marketplace.models import OwnerProfile, Property, PropertyInquiry, PropertyReview
 from marketplace.services import KNOWN_LOCATION_HINTS, search_properties
+from tennants.services.sms import TwilioNotificationService
 
 
 def _base_queryset():
@@ -279,6 +281,108 @@ def owner_profile(request, username):
             "active_nav": "marketplace",
         },
     )
+
+
+@require_GET
+def owner_inquiries(request):
+    """Display all inquiries for properties owned by the logged-in user."""
+    if not request.user.is_authenticated:
+        messages.error(request, "Please log in to view your inquiries.")
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+    profile = getattr(request.user, "marketplace_owner_profile", None)
+    if profile is None:
+        profile, _ = OwnerProfile.objects.get_or_create(user=request.user)
+    inquiries = PropertyInquiry.objects.filter(
+        property__owner_profile=profile
+    ).select_related("property").order_by("-created_at")
+    return render(
+        request,
+        "marketplace/inquiries/list.html",
+        {"inquiries": inquiries, "active_nav": "marketplace"},
+    )
+
+
+@require_POST
+def update_inquiry_status(request, pk):
+    """Update the status of an inquiry (owner action)."""
+    if not request.user.is_authenticated:
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+    inquiry = get_object_or_404(PropertyInquiry, pk=pk)
+    profile = getattr(request.user, "marketplace_owner_profile", None)
+    if not profile or inquiry.property.owner_profile != profile:
+        messages.error(request, "You do not have permission to update this inquiry.")
+        return redirect("marketplace:owner_inquiries")
+    new_status = request.POST.get("status", "").strip()
+    valid_statuses = dict(PropertyInquiry.STATUS_CHOICES)
+    if new_status in valid_statuses:
+        inquiry.status = new_status
+        inquiry.save(update_fields=["status", "updated_at"])
+        messages.success(request, f"Inquiry status updated to \"{valid_statuses[new_status]}\".")
+    else:
+        messages.error(request, "Invalid status.")
+    return redirect("marketplace:owner_inquiries")
+
+
+@require_GET
+def inquiry_detail(request, pk):
+    """Display a single inquiry with full details for the owner."""
+    if not request.user.is_authenticated:
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+    inquiry = get_object_or_404(PropertyInquiry.objects.select_related("property", "property__owner_profile", "property__owner_profile__user"), pk=pk)
+    profile = getattr(request.user, "marketplace_owner_profile", None)
+    if not profile or inquiry.property.owner_profile != profile:
+        messages.error(request, "You do not have permission to view this inquiry.")
+        return redirect("marketplace:owner_inquiries")
+    return render(
+        request,
+        "marketplace/inquiries/detail.html",
+        {"inquiry": inquiry, "active_nav": "marketplace"},
+    )
+
+
+@require_POST
+def accept_inquiry(request, pk):
+    """Accept an inquiry, send SMS to the inquirer, and set payment deadline to 3 working days."""
+    if not request.user.is_authenticated:
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+    inquiry = get_object_or_404(PropertyInquiry, pk=pk)
+    profile = getattr(request.user, "marketplace_owner_profile", None)
+    if not profile or inquiry.property.owner_profile != profile:
+        messages.error(request, "You do not have permission to accept this inquiry.")
+        return redirect("marketplace:owner_inquiries")
+
+    if inquiry.status != PropertyInquiry.STATUS_PENDING:
+        messages.error(request, "Only pending inquiries can be accepted.")
+        return redirect("marketplace:inquiry_detail", pk=inquiry.pk)
+
+    # Accept the inquiry - sets accepted_at and payment_deadline
+    inquiry.accept(commit=True)
+
+    # Send SMS to the inquirer
+    sms_success, sms_result = inquiry.send_acceptance_sms()
+
+    if sms_success:
+        messages.success(
+            request,
+            f"Inquiry from {inquiry.full_name} has been accepted. "
+            f"SMS notification sent to {inquiry.phone}. "
+            f"They must make payment by {inquiry.payment_deadline.strftime('%d %b %Y at %H:%M')}.",
+        )
+    else:
+        if inquiry.phone:
+            messages.warning(
+                request,
+                f"Inquiry accepted but SMS could not be sent to {inquiry.phone}: {sms_result}. "
+                f"The inquirer must make payment by {inquiry.payment_deadline.strftime('%d %b %Y at %H:%M')}.",
+            )
+        else:
+            messages.success(
+                request,
+                f"Inquiry accepted. No phone number provided for SMS notification. "
+                f"The inquirer must make payment by {inquiry.payment_deadline.strftime('%d %b %Y at %H:%M')}.",
+            )
+
+    return redirect("marketplace:inquiry_detail", pk=inquiry.pk)
 
 
 @require_GET

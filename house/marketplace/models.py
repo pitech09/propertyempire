@@ -262,12 +262,16 @@ class PropertyInquiry(models.Model):
     STATUS_CONTACTED = "contacted"
     STATUS_CONVERTED = "converted"
     STATUS_CANCELLED = "cancelled"
+    STATUS_ACCEPTED = "accepted"
+    STATUS_PAYMENT_EXPIRED = "payment_expired"
 
     STATUS_CHOICES = (
         (STATUS_PENDING, "Pending"),
         (STATUS_CONTACTED, "Contacted"),
         (STATUS_CONVERTED, "Converted"),
         (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_ACCEPTED, "Accepted"),
+        (STATUS_PAYMENT_EXPIRED, "Payment Expired"),
     )
 
     property = models.ForeignKey(
@@ -282,6 +286,8 @@ class PropertyInquiry(models.Model):
     message = models.TextField(blank=True)
     source_booking_reference = models.CharField(max_length=64, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    accepted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    payment_deadline = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -300,3 +306,61 @@ class PropertyInquiry(models.Model):
 
     def __str__(self):
         return f"{self.full_name} - {self.property.title}"
+
+    def accept(self, commit=True):
+        """
+        Accept the inquiry: set status to accepted, record acceptance time,
+        and set payment deadline to 3 working days from now.
+        """
+        from django.utils import timezone as tz
+
+        now = tz.now()
+        self.status = self.STATUS_ACCEPTED
+        self.accepted_at = now
+        self.payment_deadline = self._calculate_3_working_days(now)
+        if commit:
+            self.save(update_fields=["status", "accepted_at", "payment_deadline", "updated_at"])
+
+    @staticmethod
+    def _calculate_3_working_days(from_dt):
+        """
+        Calculate 3 working days from the given datetime.
+        Skips weekends (Saturday/Sunday).
+        """
+        current = from_dt
+        working_days_counted = 0
+        while working_days_counted < 3:
+            current += timezone.timedelta(days=1)
+            if current.weekday() < 5:  # Monday=0, Sunday=6
+                working_days_counted += 1
+        # Set deadline to end of that day (23:59:59)
+        return current.replace(hour=23, minute=59, second=59, microsecond=0)
+
+    def send_acceptance_sms(self):
+        """
+        Send SMS to the inquirer notifying them that their inquiry has been accepted
+        and they have 3 working days to make payment.
+        """
+        if not self.phone:
+            return False, "No phone number provided."
+        
+        from tennants.services.sms import TwilioNotificationService
+
+        property_title = self.property.title
+        deadline_date = self.payment_deadline.strftime("%d %b %Y at %H:%M") if self.payment_deadline else "within 3 working days"
+
+        message = (
+            f"Dear {self.full_name}, your inquiry for '{property_title}' has been accepted! "
+            f"You can now occupy the property. Please make payment by {deadline_date} "
+            f"to secure it, otherwise the offer will be cancelled. - PropertyEmpire"
+        )
+
+        service = TwilioNotificationService()
+        success, result = service.send_sms(self.phone, message, queue_on_failure=True)
+        return success, result
+
+    def cancel_due_to_non_payment(self, commit=True):
+        """Cancel inquiry because payment deadline was missed."""
+        self.status = self.STATUS_PAYMENT_EXPIRED
+        if commit:
+            self.save(update_fields=["status", "updated_at"])

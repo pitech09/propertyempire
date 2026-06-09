@@ -246,6 +246,24 @@ def dashboard(request):
     else:
         percent_occupied = 0.0
     
+    # Marketplace inquiries for this landlord's properties
+    pending_inquiries = []
+    accepted_inquiries = []
+    try:
+        owner_profile = getattr(request.user, "marketplace_owner_profile", None)
+        if owner_profile:
+            from marketplace.models import PropertyInquiry
+            pending_inquiries = PropertyInquiry.objects.filter(
+                property__owner_profile=owner_profile,
+                status=PropertyInquiry.STATUS_PENDING,
+            ).select_related("property").order_by("-created_at")[:5]
+            accepted_inquiries = PropertyInquiry.objects.filter(
+                property__owner_profile=owner_profile,
+                status=PropertyInquiry.STATUS_ACCEPTED,
+            ).select_related("property").order_by("-accepted_at")[:5]
+    except Exception:
+        pass
+
     context = {
         'buildings': buildings,
         'total_houses': total_houses,
@@ -261,6 +279,8 @@ def dashboard(request):
         'resolved_issues': resolved_issues,
         'pending_payment_requests': pending_payment_requests,
         'percent_occupied': percent_occupied,
+        'pending_inquiries': pending_inquiries,
+        'accepted_inquiries': accepted_inquiries,
     }
     return render(request, 'dashboard.html', context)
 

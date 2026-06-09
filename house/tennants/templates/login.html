@@ -4,688 +4,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - PropertyEmpire</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* ====== LOADING SPINNER OVERLAY ====== */
-        #page-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0a0a0f;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            z-index: 99999;
-            opacity: 1;
-            transition: opacity 0.3s ease;
-        }
-
-        #page-loader.active {
-            display: flex;
-        }
-
-        #page-loader.fade-out {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .spinner-ring {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            border: 4px solid #2a2a3a;
-            border-top-color: #dcf11c;
-            animation: spin 0.8s linear infinite;
-        }
-
-        .spinner-text {
-            margin-top: 20px;
-            color: #6b6b7e;
-            font-size: 0.9rem;
-            font-weight: 500;
-            font-family: 'Space Grotesk', sans-serif;
-            letter-spacing: 0.05em;
-            animation: pulse-text 1.5s ease-in-out infinite;
-        }
-
-        .spinner-logo {
-            margin-bottom: 24px;
-            font-size: 1.6rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            font-family: 'Space Grotesk', sans-serif;
-            color: #ffffff;
-        }
-
-        .spinner-logo span {
-            color: #dcf11c;
-        }
-
-        .spinner-dots {
-            display: inline-flex;
-            gap: 4px;
-            margin-left: 4px;
-        }
-
-        .spinner-dots span {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #dcf11c;
-            animation: dot-bounce 1.4s ease-in-out infinite both;
-        }
-
-        .spinner-dots span:nth-child(1) { animation-delay: -0.32s; }
-        .spinner-dots span:nth-child(2) { animation-delay: -0.16s; }
-        .spinner-dots span:nth-child(3) { animation-delay: 0s; }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes pulse-text {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-
-        @keyframes dot-bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
-        /* ====== END LOADING SPINNER ====== */
-
-        :root {
-            --primary: #dcf11c;
-            --primary-glow: rgba(220, 241, 28, 0.15);
-            --secondary: #39e416;
-            --blue: #3b82f6;
-            --dark: #0a0a0f;
-            --dark-elevated: #12121a;
-            --dark-card: #1a1a24;
-            --text: #ffffff;
-            --text-secondary: #b8b8c8;
-            --text-muted: #6b6b7e;
-            --border: #2a2a3a;
-            --danger: #ef4444;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-            background: var(--dark);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-
-        /* Background Effects */
-        .bg-pattern {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.4;
-        }
-
-        .bg-pattern::before {
-            content: '';
-            position: absolute;
-            top: -30%;
-            right: -20%;
-            width: 700px;
-            height: 700px;
-            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-
-        .bg-pattern::after {
-            content: '';
-            position: absolute;
-            bottom: -40%;
-            left: -15%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-
-        .grid-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(rgba(220, 241, 28, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(220, 241, 28, 0.02) 1px, transparent 1px);
-            background-size: 50px 50px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* Geometric Shapes */
-        .geo-shape {
-            position: fixed;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .geo-1 {
-            top: 15%;
-            left: 8%;
-            width: 60px;
-            height: 60px;
-            border: 2px solid rgba(220, 241, 28, 0.2);
-            transform: rotate(45deg);
-        }
-
-        .geo-2 {
-            bottom: 20%;
-            right: 10%;
-            width: 80px;
-            height: 80px;
-            border: 2px solid rgba(59, 130, 246, 0.15);
-            border-radius: 50%;
-        }
-
-        .geo-3 {
-            top: 60%;
-            left: 5%;
-            width: 40px;
-            height: 40px;
-            background: rgba(220, 241, 28, 0.08);
-            border-radius: 8px;
-            transform: rotate(15deg);
-        }
-
-        /* Login Container */
-        .login-container {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 440px;
-        }
-
-        .login-card {
-            background: var(--dark-card);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 48px 40px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-        }
-
-        /* Logo */
-        .logo {
-            text-align: center;
-            margin-bottom: 36px;
-        }
-
-        .logo-icon {
-            width: 64px;
-            height: 64px;
-            background: var(--primary);
-            border-radius: 16px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            transform: rotate(-5deg);
-            box-shadow: 0 10px 40px rgba(220, 241, 28, 0.3);
-        }
-
-        .logo-icon svg {
-            width: 36px;
-            height: 36px;
-            fill: var(--dark);
-        }
-
-        .logo h1 {
-            color: var(--text);
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .logo h1 span {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .logo p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-top: 8px;
-        }
-
-        /* Form */
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        .form-group label {
-            display: block;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 10px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 16px 18px;
-            background: var(--dark-elevated);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            color: var(--text);
-            font-size: 1rem;
-            font-family: inherit;
-            transition: all 0.2s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-glow);
-        }
-
-        .form-group input::placeholder {
-            color: var(--text-muted);
-        }
-
-        /* Remember & Forgot */
-        .remember-forgot {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 28px;
-        }
-
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        .remember-me input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--primary);
-            cursor: pointer;
-        }
-
-        .forgot-link {
-            color: var(--blue);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-
-        .forgot-link:hover {
-            color: var(--primary);
-        }
-
-        /* Submit Button */
-        .btn-login {
-            width: 100%;
-            padding: 16px 24px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: var(--dark);
-            border: none;
-            border-radius: 14px;
-            font-size: 1rem;
-            font-weight: 700;
-            font-family: inherit;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 30px rgba(220, 241, 28, 0.25);
-        }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(220, 241, 28, 0.35);
-        }
-
-        .btn-login:active {
-            transform: translateY(0);
-        }
-
-        /* Divider */
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 28px 0;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .divider span {
-            padding: 0 16px;
-        }
-
-        /* Register Link */
-        .register-link {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-
-        .register-link a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .register-link a:hover {
-            text-decoration: underline;
-        }
-
-        /* Alerts */
-        .alert {
-            padding: 14px 18px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .alert-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-        }
-
-        .alert-success {
-            background: rgba(57, 228, 22, 0.1);
-            border: 1px solid rgba(57, 228, 22, 0.2);
-            color: var(--secondary);
-        }
-
-        .errorlist {
-            list-style: none;
-            margin: 8px 0 0 0;
-            padding: 0;
-        }
-
-        .errorlist li {
-            color: #fca5a5;
-            font-size: 0.85rem;
-        }
-
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 36px 28px;
-            }
-
-            .logo h1 {
-                font-size: 1.5rem;
-            }
-
-            .remember-forgot {
-                flex-direction: column;
-                gap: 14px;
-                align-items: flex-start;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Full-page Loading Spinner -->
-    <div id="page-loader" class="active">
-        <div class="spinner-logo">Property<span>Empire</span></div>
-        <div class="spinner-ring"></div>
-        <div class="spinner-text">
-            Loading
-            <span class="spinner-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-            </span>
-        </div>
-    </div>
-
-    <!-- Background Effects -->
-    <div class="bg-pattern"></div>
-    <div class="grid-bg"></div>
-    <div class="geo-shape geo-1"></div>
-    <div class="geo-shape geo-2"></div>
-    <div class="geo-shape geo-3"></div>
-
-    <div class="login-container">
-        <!-- Back to Landing Button -->
-        <div style="text-align: center; margin-bottom: 1rem;">
-            <a href="{% url 'landing' %}"
-               style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
-                      background: var(--dark-card); border: 1px solid var(--border); border-radius: 12px;
-                      color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; font-weight: 500;
-                      font-family: 'Space Grotesk', sans-serif; transition: all 0.2s ease;"
-               onmouseover="this.style.borderColor='var(--primary)'; this.style.color='var(--text)';"
-               onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-secondary)';">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7"></path>
-                </svg>
-                Back to Home
-            </a>
-        </div>
-        <div class="login-card">
-            <div class="logo">
-                <div class="logo-icon">
-<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  
-  <!-- Gradient -->
-  <defs>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f7e27a"/>
-      <stop offset="50%" stop-color="#d4af37"/>
-      <stop offset="100%" stop-color="#a67c00"/>
-    </linearGradient>
-  </defs>
-
-  <!-- Base arc (empire foundation) -->
-  <path d="M30 130 Q100 170 170 130" 
-        fill="none" 
-        stroke="url(#gold)" 
-        stroke-width="4"/>
-
-  <!-- Main building -->
-  <rect x="85" y="60" width="30" height="70" fill="url(#gold)" rx="2"/>
-
-  <!-- Left house -->
-  <rect x="45" y="85" width="28" height="45" fill="url(#gold)" rx="2"/>
-  <polygon points="45,85 59,70 73,85" fill="url(#gold)"/>
-
-  <!-- Right building -->
-  <rect x="127" y="80" width="32" height="50" fill="url(#gold)" rx="2"/>
-
-  <!-- Crown (empire identity) -->
-  <path d="M90 50 
-           L100 35 
-           L110 50 
-           L120 40 
-           L115 55 
-           L85 55 
-           L80 40 Z"
-        fill="url(#gold)"/>
-
-  <!-- Windows (minimal detail) -->
-  <rect x="92" y="75" width="6" height="6" fill="#fff" opacity="0.6"/>
-  <rect x="92" y="90" width="6" height="6" fill="#fff" opacity="0.6"/>
-
-</svg>
-
-                </div>
-                <h1>Property<span>Empire</span></h1>
-                <p>Sign in to your account</p>
-            </div>
-
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            {% if form.non_field_errors %}
-                <div class="alert alert-error">
-                    {% for error in form.non_field_errors %}
-                        {{ error }}
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-            <form method="post" action="{% url 'login' %}">
-                {% csrf_token %}
-                
-                <div class="form-group">
-                    <label for="id_username">Username</label>
-                    <input type="text" name="username" id="id_username" placeholder="Enter your username" required autofocus>
-                    {% if form.username.errors %}
-                        <ul class="errorlist">
-                            {% for error in form.username.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="id_password">Password</label>
-                    <input type="password" name="password" id="id_password" placeholder="Enter your password" required>
-                    {% if form.password.errors %}
-                        <ul class="errorlist">
-                            {% for error in form.password.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-
-                <div class="remember-forgot">
-                    <label class="remember-me">
-                        <input type="checkbox" name="remember">
-                        Remember me
-                    </label>
-                    <a href="{% url 'sms_password_reset' %}" class="forgot-link">Forgot password?</a>
-                </div>
-
-                <input type="hidden" name="next" value="{{ next }}">
-                
-                <button type="submit" class="btn-login">Sign In</button>
-            </form>
-
-            <div class="divider">
-                <span>or</span>
-            </div>
-
-            <p class="register-link">
-                Don't have an account? <a href="{% url 'register' %}">Create one</a>
-            </p>
-        </div>
-    </div>
-
-    <!-- Loading Spinner Script -->
+    <title>Sign In - PropertyEmpire</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        (function() {
-            'use strict';
-
-            const loader = document.getElementById('page-loader');
-
-            function hideLoader() {
-                if (loader) {
-                    loader.classList.add('fade-out');
-                    setTimeout(function() {
-                        loader.classList.remove('active');
-                        loader.style.display = 'none';
-                    }, 300);
-                }
-            }
-
-            function showLoader() {
-                if (loader) {
-                    loader.style.display = 'flex';
-                    loader.classList.remove('fade-out');
-                    loader.classList.add('active');
-                }
-            }
-
-            // Intercept all navigation link clicks
-            document.addEventListener('click', function(e) {
-                var target = e.target.closest('a');
-                if (!target) return;
-
-                var href = target.getAttribute('href');
-                if (!href || 
-                    href.startsWith('#') || 
-                    href.startsWith('javascript:') || 
-                    href.startsWith('mailto:') ||
-                    href.startsWith('tel:') ||
-                    target.hasAttribute('download') ||
-                    target.hasAttribute('data-no-loader') ||
-                    target.target === '_blank') {
-                    return;
-                }
-
-                var currentPath = window.location.pathname + window.location.search;
-                var linkPath = new URL(href, window.location.origin).pathname + new URL(href, window.location.origin).search;
-                if (currentPath !== linkPath) {
-                    showLoader();
-                }
-            }, true);
-
-            // Hide loader once the page is fully loaded
-            if (document.readyState === 'complete') {
-                hideLoader();
-            } else {
-                window.addEventListener('load', hideLoader);
-                document.addEventListener('DOMContentLoaded', function() {
-                    setTimeout(hideLoader, 5000);
-                });
-            }
-        })();
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              display: ["Manrope", "Inter", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
     </script>
+    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body class="min-h-screen bg-[#fbfbfd] font-sans text-slate-900 antialiased">
+    <div class="flex min-h-screen items-center justify-center px-4 py-12">
+        <div class="w-full max-w-md">
+            <!-- Back to Home -->
+            <div class="mb-6 text-center">
+                <a href="{% url 'landing' %}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    Back to Home
+                </a>
+            </div>
+
+            <!-- Card -->
+            <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+                <!-- Logo -->
+                <div class="mb-8 text-center">
+                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-xl font-bold text-white shadow-lg">
+                        PE
+                    </div>
+                    <h1 class="font-display text-2xl font-extrabold text-slate-950">Welcome back</h1>
+                    <p class="mt-1.5 text-sm text-slate-500">Sign in to your Property Empire account</p>
+                </div>
+
+                <!-- Messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if form.non_field_errors %}
+                    <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Form -->
+                <form method="post" action="{% url 'login' %}" class="space-y-5">
+                    {% csrf_token %}
+
+                    <div>
+                        <label for="id_username" class="mb-1.5 block text-sm font-semibold text-slate-700">Username</label>
+                        <input type="text" name="username" id="id_username" placeholder="Enter your username" required autofocus
+                               class="block w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100 placeholder:text-slate-400">
+                        {% if form.username.errors %}
+                            <ul class="mt-1.5 space-y-0.5">
+                                {% for error in form.username.errors %}<li class="text-xs text-red-500">{{ error }}</li>{% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="id_password" class="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
+                        <input type="password" name="password" id="id_password" placeholder="Enter your password" required
+                               class="block w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100 placeholder:text-slate-400">
+                        {% if form.password.errors %}
+                            <ul class="mt-1.5 space-y-0.5">
+                                {% for error in form.password.errors %}<li class="text-xs text-red-500">{{ error }}</li>{% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 text-sm text-slate-500 cursor-pointer">
+                            <input type="checkbox" name="remember" class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
+                            Remember me
+                        </label>
+                        <a href="{% url 'sms_password_reset' %}" class="text-sm font-semibold text-slate-700 underline-offset-2 hover:underline">Forgot password?</a>
+                    </div>
+
+                    <input type="hidden" name="next" value="{{ next }}">
+
+                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]">
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="relative my-7">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+                    <div class="relative flex justify-center"><span class="bg-white px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">or</span></div>
+                </div>
+
+                <p class="text-center text-sm text-slate-500">
+                    Don't have an account?
+                    <a href="{% url 'register' %}" class="font-semibold text-slate-700 underline-offset-2 hover:underline">Create one</a>
+                </p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import logging
+
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from guesthouse.models import Room, RoomType
 from tennants.models import FlatBuilding, House
 
+from .models import PropertyInquiry
+from .notifications import send_inquiry_notification
 from .services import delete_property_for_source, sync_property_from_house, sync_property_from_room
+
+logger = logging.getLogger(__name__)
 
 
 @receiver(post_save, sender=House)
@@ -39,4 +45,16 @@ def room_deleted(sender, instance, **kwargs):
 def room_type_saved(sender, instance, **kwargs):
     for room in instance.rooms.select_related("room_type"):
         sync_property_from_room(room)
+
+
+@receiver(post_save, sender=PropertyInquiry)
+def inquiry_saved(sender, instance, created, **kwargs):
+    """Send notification to the property owner when a new inquiry is created."""
+    if not created:
+        return
+    success, message = send_inquiry_notification(instance)
+    if success:
+        logger.info("Owner notified about inquiry %s: %s", instance.pk, message)
+    else:
+        logger.info("Owner notification for inquiry %s: %s", instance.pk, message)
 
