@@ -11,7 +11,6 @@ from django.views.decorators.http import require_GET
 from guesthouse.models import (
     Booking,
     GuestPayment,
-    HousekeepingTask,
     Room,
     RoomMaintenance,
 )
@@ -170,9 +169,6 @@ def dashboard(request):
     pending_payments = Booking.objects.filter(
         booking_status=Booking.STATUS_CHECKED_OUT
     ).count()  # checked out but not yet fully reconciled
-    pending_housekeeping = HousekeepingTask.objects.exclude(
-        status=HousekeepingTask.STATUS_COMPLETED
-    ).count()
     pending_maintenance = RoomMaintenance.objects.exclude(
         status=RoomMaintenance.STATUS_RESOLVED
     ).count()
@@ -214,7 +210,6 @@ def dashboard(request):
         # Quick action counts
         "pending_payments": pending_payments,
         "unpaid_balance_count": unpaid_balance_count,
-        "pending_housekeeping": pending_housekeeping,
         "pending_maintenance": pending_maintenance,
         # Empty-state hints
         "no_data_mode": no_data_mode,

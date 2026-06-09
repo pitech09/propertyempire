@@ -3,7 +3,6 @@ from .rooms import RoomTypeForm, RoomForm, RoomImageForm
 from .guests import GuestForm
 from .bookings import BookingForm, WalkInBookingForm
 from .payments import GuestPaymentForm
-from .housekeeping import HousekeepingTaskForm
 from .maintenance import RoomMaintenanceForm
 from .images import GuestHouseImageForm
 
@@ -15,7 +14,6 @@ __all__ = [
     "BookingForm",
     "WalkInBookingForm",
     "GuestPaymentForm",
-    "HousekeepingTaskForm",
     "RoomMaintenanceForm",
     "GuestHouseImageForm",
 ]

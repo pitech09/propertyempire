@@ -27,7 +27,6 @@ from guesthouse.models import (
     Booking,
     Guest,
     GuestPayment,
-    HousekeepingTask,
     Room,
     RoomMaintenance,
     RoomType,
@@ -101,13 +100,6 @@ MAINTENANCE_TITLES = [
     "Toilet seat loose",
 ]
 
-HOUSEKEEPING_NOTES = [
-    "Standard checkout clean", "Deep cleaning required", "Inspection only",
-    "Replace towels and linens", "Restock mini bar", "Sanitize bathroom",
-    "Vacuum and mop floors", "Wipe down all surfaces", "Check safe is empty",
-]
-
-
 def _rand_phone() -> str:
     return f"+{random.choice([266, 27, 267, 268])}5{random.randint(1000000, 9999999)}"[:13]
 
@@ -130,7 +122,6 @@ class Command(BaseCommand):
         parser.add_argument("--rooms-per-type", type=int, default=6)
         parser.add_argument("--guests", type=int, default=120)
         parser.add_argument("--bookings", type=int, default=180)
-        parser.add_argument("--housekeeping-tasks", type=int, default=40)
         parser.add_argument("--maintenance-issues", type=int, default=25)
         parser.add_argument(
             "--reset",
@@ -167,7 +158,6 @@ class Command(BaseCommand):
             staff,
             skip_availability=options["skip_availability"],
         )
-        self._make_housekeeping_tasks(rooms, staff, options["housekeeping_tasks"])
         self._make_maintenance_issues(rooms, staff, options["maintenance_issues"])
 
         self._print_summary()
@@ -178,7 +168,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING("Resetting guesthouse tables..."))
         GuestPayment.objects.all().delete()
         Booking.objects.all().delete()
-        HousekeepingTask.objects.all().delete()
         RoomMaintenance.objects.all().delete()
         Guest.objects.all().delete()
         Room.objects.all().delete()
@@ -481,27 +470,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  + {created} bookings ({skipped} skipped)")
 
     # ------------------------------------------------------------------ #
-    def _make_housekeeping_tasks(self, rooms, staff, count: int):
-        task_types = ["cleaning", "cleaning", "deep_cleaning", "inspection", "laundry"]
-        statuses = ["pending", "pending", "in_progress", "completed", "cancelled"]
-        hk_user = staff.get("housekeeper1") or staff.get("admin")
-        for _ in range(count):
-            room = random.choice(rooms)
-            hk, _ = HousekeepingTask.objects.get_or_create(
-                room=room,
-                task_type=random.choice(task_types),
-                scheduled_date=_rand_date_within(1, 14),
-                defaults={
-                    "status": random.choice(statuses),
-                    "priority": random.choice(["low", "medium", "medium", "high"]),
-                    "notes": random.choice(HOUSEKEEPING_NOTES),
-                    "assigned_to": hk_user if random.random() < 0.5 else None,
-                    "started_at": timezone.now() - timedelta(hours=random.randint(1, 24)) if random.random() < 0.3 else None,
-                },
-            )
-        self.stdout.write(f"  + {count} housekeeping tasks")
-
-    # ------------------------------------------------------------------ #
     def _make_maintenance_issues(self, rooms, staff, count: int):
         maint_user = staff.get("maint1") or staff.get("admin")
         statuses = ["open", "open", "in_progress", "resolved", "closed"]
@@ -538,7 +506,6 @@ class Command(BaseCommand):
             "Checked Out": Booking.objects.filter(booking_status=Booking.STATUS_CHECKED_OUT).count(),
             "Stays": Booking.objects.filter(stay__isnull=False).count(),
             "Payments": GuestPayment.objects.count(),
-            "HK Tasks": HousekeepingTask.objects.count(),
             "Maintenance": RoomMaintenance.objects.count(),
         }
         self.stdout.write(self.style.MIGRATE_HEADING("Summary"))

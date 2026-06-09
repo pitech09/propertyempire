@@ -227,11 +227,6 @@ UNFOLD = {
                         "link": "/admin/guesthouse/guestpayment/",
                     },
                     {
-                        "title": "Housekeeping",
-                        "icon": "cleaning",
-                        "link": "/admin/guesthouse/housekeepingtask/",
-                    },
-                    {
                         "title": "Maintenance",
                         "icon": "build",
                         "link": "/admin/guesthouse/roommaintenance/",

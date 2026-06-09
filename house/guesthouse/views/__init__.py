@@ -6,7 +6,6 @@ from . import guests  # noqa: F401
 from . import bookings  # noqa: F401
 from . import reception  # noqa: F401
 from . import payments  # noqa: F401
-from . import housekeeping  # noqa: F401
 from . import maintenance  # noqa: F401
 from . import reports  # noqa: F401
 from . import ajax  # noqa: F401

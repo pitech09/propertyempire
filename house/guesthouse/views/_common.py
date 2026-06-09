@@ -76,12 +76,6 @@ def reception_or_above_required(view_func):
     )(view_func)
 
 
-def housekeeping_only_required(view_func):
-    return role_required(
-        ROLE_ADMIN, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER
-    )(view_func)
-
-
 def maintenance_only_required(view_func):
     return role_required(
         ROLE_ADMIN, ROLE_PROPERTY_MANAGER, ROLE_MAINTENANCE

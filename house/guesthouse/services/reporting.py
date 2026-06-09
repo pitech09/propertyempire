@@ -14,7 +14,6 @@ from guesthouse.models import (
     Booking,
     Guest,
     GuestPayment,
-    HousekeepingTask,
     Room,
     RoomMaintenance,
 )

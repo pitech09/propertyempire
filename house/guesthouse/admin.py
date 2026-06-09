@@ -7,7 +7,6 @@ from guesthouse.models import (
     Booking,
     Guest,
     GuestPayment,
-    HousekeepingTask,
     Room,
     RoomMaintenance,
     RoomType,
@@ -148,25 +147,6 @@ class GuestPaymentAdmin(admin.ModelAdmin):
     date_hierarchy = "payment_date"
     autocomplete_fields = ("booking",)
     list_select_related = ("booking", "booking__guest")
-
-
-# --------------------------------------------------------------------- #
-@admin.register(HousekeepingTask)
-class HousekeepingTaskAdmin(admin.ModelAdmin):
-    list_display = (
-        "room", "task_type", "status_badge", "priority",
-        "scheduled_date", "assigned_to", "completed_date",
-    )
-    list_filter = ("status", "task_type", "priority")
-    search_fields = ("room__room_number", "notes")
-    list_select_related = ("room", "assigned_to")
-    date_hierarchy = "scheduled_date"
-
-    def status_badge(self, obj):
-        return format_html(
-            '<span class="badge">{}</span>', obj.get_status_display()
-        )
-    status_badge.short_description = "Status"
 
 
 # --------------------------------------------------------------------- #
