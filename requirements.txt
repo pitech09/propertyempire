@@ -57,6 +57,7 @@ frozenlist==1.8.0
 fsspec==2026.4.0
 ftfy==6.3.1
 greenlet==3.5.0
+gunicorn==26.0.0
 h11==0.16.0
 h2==4.3.0
 hpack==4.1.0
